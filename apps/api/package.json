@@ -11,7 +11,7 @@
     "db:migrate": "tsx --env-file=.env src/db/migrate.ts",
     "terac:filters": "tsx --env-file=.env scripts/terac-filters.ts",
     "terac:webhooks": "tsx --env-file=.env scripts/terac-webhooks.ts",
-    "build": "esbuild src/index.ts --bundle --platform=node --target=node24 --format=esm --outfile=dist/server.mjs --banner:js=\"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);\""
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node24 --format=esm --outfile=dist/server.mjs --banner:js=\"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);\" && node -e \"require('fs').mkdirSync('public',{recursive:true})\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.3.0",
