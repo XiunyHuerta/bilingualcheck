@@ -1,4 +1,4 @@
-import { type Brief, type Card as ChatCard, languageName, type SubmissionReview } from "@bc/shared";
+import { type Brief, type BriefEditField, type Card as ChatCard, languageName, type SubmissionReview } from "@bc/shared";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, fonts, radius, space, tones } from "@/theme/tokens";
@@ -10,16 +10,22 @@ import { Avatar, Body, Button, Card, ConceptDemoTag, Eyebrow, Heading, Pill } fr
 
 export type CardActions = {
   canConfirmBrief: boolean;
+  canEditBrief: boolean;
   canPay: boolean;
+  canDemoPay: boolean;
+  paymentBusy: boolean;
   busy: boolean;
   onConfirmBrief: () => void;
-  onCorrectBrief: () => void;
+  onCorrectBrief: (field?: BriefEditField) => void;
   onPay: () => void;
+  onDemoPay: () => void;
   onQuickReply: (text: string) => void;
   onOpenDelivery: (submissionId: string) => void;
+  onNewProject: (goal: string) => void;
 };
 
 export function MessageCard({ card, actions }: { card: ChatCard; actions: CardActions }) {
+  const { t } = useTranslation();
   return (
     <Reveal style={{ marginTop: space.sm }}>
       {card.type === "quick_replies" && <QuickReplies options={card.options} onPick={actions.onQuickReply} />}
@@ -27,6 +33,10 @@ export function MessageCard({ card, actions }: { card: ChatCard; actions: CardAc
       {card.type === "quote" && <QuoteCard total={card.total_usd} etaDays={card.eta_days} includes={card.includes} actions={actions} />}
       {card.type === "delivery" && <DeliveryCard submissionId={card.submission_id} review={card.review} onOpen={actions.onOpenDelivery} />}
       {card.type === "recommendation" && <RecommendationCard text={card.text} />}
+      {card.type === "new_project" && <Card tone="gold" style={{ gap: space.md }}>
+        <Body>{card.reason}</Body><Body small muted>{t("refinements.scopeChange")}</Body>
+        <Button label={t("refinements.newProject")} compact onPress={() => actions.onNewProject(card.goal)} />
+      </Card>}
     </Reveal>
   );
 }
@@ -46,10 +56,15 @@ function QuickReplies({ options, onPick }: { options: string[]; onPick: (text: s
 }
 
 /** Fila blanca con label + valor, dentro de una tarjeta sky-soft. */
-export function InfoRow({ label, value }: { label: string; value: string }) {
+export function InfoRow({ label, value, onEdit }: { label: string; value: string; onEdit?: () => void }) {
+  const { t } = useTranslation();
   return (
     <View style={s.infoRow}>
-      <Text style={s.label}>{label}</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: space.sm }}>
+        <Text style={[s.label, { flex: 1 }]}>{label}</Text>
+        {onEdit && <Button label={t("briefEditor.edit")} variant="ghost" compact onPress={onEdit}
+          accessibilityLabel={t("briefEditor.editField", { field: label })} />}
+      </View>
       <Text style={s.value}>{value}</Text>
     </View>
   );
@@ -73,17 +88,20 @@ function BriefCard({ brief, actions }: { brief: Brief; actions: CardActions }) {
           </Pop>
         )}
       </View>
-      <InfoRow label={t("card.goal")} value={brief.goal} />
-      <InfoRow label={t("card.market")} value={market} />
-      <InfoRow label={t("card.audience")} value={brief.audience} />
-      <InfoRow label={t("card.deliverables")} value={brief.deliverables.map((d) => `• ${d}`).join("\n")} />
-      {brief.cultural_notes.length > 0 && <InfoRow label={t("card.culturalNotes")} value={brief.cultural_notes.map((d) => `• ${d}`).join("\n")} />}
+      <InfoRow label={t("card.goal")} value={brief.goal} onEdit={actions.canEditBrief ? () => actions.onCorrectBrief("goal") : undefined} />
+      <InfoRow label={t("card.market")} value={market} onEdit={actions.canEditBrief ? () => actions.onCorrectBrief("market") : undefined} />
+      <InfoRow label={t("card.audience")} value={brief.audience} onEdit={actions.canEditBrief ? () => actions.onCorrectBrief("audience") : undefined} />
+      <InfoRow label={t("card.deliverables")} value={brief.deliverables.map((d) => `• ${d}`).join("\n")} onEdit={actions.canEditBrief ? () => actions.onCorrectBrief("deliverables") : undefined} />
+      {(brief.cultural_notes.length > 0 || actions.canEditBrief) && <InfoRow label={t("card.culturalNotes")}
+        value={brief.cultural_notes.map((d) => `• ${d}`).join("\n")}
+        onEdit={actions.canEditBrief ? () => actions.onCorrectBrief("cultural_notes") : undefined} />}
       {actions.canConfirmBrief && (
         <View style={s.actions}>
           <Button label={t("card.confirm")} onPress={actions.onConfirmBrief} loading={actions.busy} style={{ flex: 1 }} />
-          <Button label={t("card.correct")} variant="secondary" onPress={actions.onCorrectBrief} style={{ flex: 1 }} />
         </View>
       )}
+      {actions.canEditBrief && <Button label={t("briefEditor.editAll")} variant="secondary"
+        onPress={() => actions.onCorrectBrief("all")} disabled={actions.busy} />}
     </Card>
   );
 }
@@ -112,7 +130,12 @@ function QuoteCard(props: { total: number; etaDays: number | null; includes: str
       )}
       {/* El dinero lo controla el usuario: se dice siempre (guía §6). */}
       <Text style={s.moneyNote}>{t("card.moneyNote")}</Text>
-      {props.actions.canPay && <Button label={t("card.pay")} onPress={props.actions.onPay} loading={props.actions.busy} style={{ marginTop: space.lg }} />}
+      {props.actions.canDemoPay && <View style={{ gap: space.sm, marginTop: space.lg }}>
+        <Button label={t("card.demoPay")} onPress={props.actions.onDemoPay} loading={props.actions.paymentBusy} />
+        <Body small muted>{t("card.demoPaymentNote")}</Body>
+      </View>}
+      {props.actions.canPay && <Button label={t("card.pay")} variant={props.actions.canDemoPay ? "secondary" : "primary"}
+        onPress={props.actions.onPay} loading={props.actions.paymentBusy} style={{ marginTop: space.lg }} />}
     </Card>
   );
 }

@@ -1,99 +1,52 @@
-import { languageName } from "@bc/shared";
+import { isValidLanguageTag, languageName } from "@bc/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { router, Stack } from "expo-router";
-import { useMemo, useState } from "react";
+import { router, Stack, useLocalSearchParams } from "expo-router";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { Pop } from "@/components/motion";
-import { Body, Button, Card, Check, Field, Heading, Screen } from "@/components/ui";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { Body, Button, Card, Chip, Eyebrow, Field, Heading, Screen } from "@/components/ui";
 import { post, type Project } from "@/lib/api";
-import { colors, fonts, radius, space } from "@/theme/tokens";
+import { useResponsive } from "@/theme/responsive";
+import { space } from "@/theme/tokens";
 
-// Lista amplia de idiomas: cualquier par es válido (nada asume inglés ↔ español).
-// El nombre se muestra con Intl.DisplayNames en el idioma de la interfaz, sin banderas.
-const LANGUAGES = [
-  "es", "en", "pt", "fr", "de", "it", "ko", "ja", "zh", "vi", "tl", "ar", "hi", "ru", "uk", "pl", "ht", "fa", "tr", "he",
-  "bn", "ur", "pa", "gu", "ta", "te", "th", "id", "ms", "sw", "am", "so", "yo", "ha", "nl", "el", "ro", "hu", "cs", "sv",
-];
-
-export default function NewProject() {
+const LANGUAGES = ["es", "en", "pt", "fr", "it", "de", "ar", "zh", "ja", "hi", "ht", "ko"];
+export default function NewGoal() {
   const { t, i18n } = useTranslation();
+  const { gutter } = useResponsive();
   const queryClient = useQueryClient();
-  const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState(i18n.language);
-
-  const options = useMemo(() => {
-    const named = LANGUAGES.map((code) => ({ code, name: languageName(code, i18n.language), native: languageName(code, code) }));
-    const q = query.trim().toLowerCase();
-    return q ? named.filter((l) => `${l.name} ${l.native} ${l.code}`.toLowerCase().includes(q)) : named;
-  }, [query, i18n.language]);
-
+  const { goal: suggestedGoal } = useLocalSearchParams<{ goal?: string }>();
+  const [goal, setGoal] = useState(() => typeof suggestedGoal === "string" ? suggestedGoal.slice(0, 8000) : "");
+  const [language, setLanguage] = useState(i18n.language);
+  const [target, setTarget] = useState("");
+  const valid = Boolean(goal.trim() && isValidLanguageTag(language.trim()) && (!target.trim() || isValidLanguageTag(target.trim())));
   const create = useMutation({
-    mutationFn: () => post<{ project: Project }>("/v1/projects", { source_language: selected }),
+    mutationFn: () => post<{ project: Project }>("/v1/projects", { source_language: language.trim(),
+      ...(target.trim() ? { target_language: target.trim() } : {}), goal: goal.trim() }),
     onSuccess: ({ project }) => {
       void queryClient.invalidateQueries({ queryKey: ["projects"] });
+      void queryClient.invalidateQueries({ queryKey: ["workspace"] });
       router.replace({ pathname: "/project/[id]", params: { id: project.id } });
     },
   });
-
-  return (
-    <Screen blobs edges={["bottom"]}>
-      <Stack.Screen options={{ title: t("newProject.title") }} />
-      <View style={s.head}>
-        <Heading>{t("newProject.heading")}</Heading>
-        <Body muted small>
-          {t("newProject.sourceLanguage")}
-        </Body>
-        <Field value={query} onChangeText={setQuery} placeholder={t("newProject.search")} autoCorrect={false} accessibilityLabel={t("newProject.search")} />
-      </View>
-      <FlatList
-        data={options}
-        keyExtractor={(l) => l.code}
-        contentContainerStyle={s.list}
-        keyboardShouldPersistTaps="handled"
-        ItemSeparatorComponent={() => <View style={{ height: space.sm }} />}
-        ListEmptyComponent={
-          <Card>
-            <Body small muted>
-              {t("newProject.empty")}
-            </Body>
-          </Card>
-        }
-        renderItem={({ item }) => {
-          const on = selected === item.code;
-          return (
-            <Pressable
-              accessibilityRole="radio"
-              accessibilityState={{ selected: on }}
-              onPress={() => setSelected(item.code)}
-              style={({ pressed }) => [s.lang, on && s.langOn, pressed && { opacity: 0.8 }]}
-            >
-              <View style={{ flex: 1 }}>
-                <Text style={s.langName}>{item.native}</Text>
-                {item.name !== item.native && <Text style={s.langSub}>{item.name}</Text>}
-              </View>
-              {on && (
-                <Pop>
-                  <Check size={24} />
-                </Pop>
-              )}
-            </Pressable>
-          );
-        }}
-      />
-      <View style={s.footer}>
-        <Button label={t("newProject.create")} onPress={() => create.mutate()} loading={create.isPending} />
-      </View>
-    </Screen>
-  );
+  return <Screen blobs size="reading" edges={["bottom"]}>
+    <Stack.Screen options={{ title: t("v2.start") }} />
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[s.page, { padding: gutter }]}>
+      <Eyebrow>{t("v2.start")}</Eyebrow><Heading>{t("v2.goalQuestion")}</Heading><Body muted>{t("v2.goalHint")}</Body>
+      <Field multiline value={goal} onChangeText={setGoal} maxLength={8000} placeholder={t("v2.goalPlaceholder")}
+        accessibilityLabel={t("v2.goalQuestion")} style={{ minHeight: 180, textAlignVertical: "top" }} editable={!create.isPending} />
+      <View style={s.chips}>{["market", "campaign", "website", "community", "product", "other"].map(key => <Chip key={key}
+        label={t(`v2.suggestions.${key}`)} onPress={() => { if (!create.isPending) setGoal(previous => previous ? `${previous}\n${t(`v2.suggestions.${key}`)}` : t(`v2.suggestions.${key}`)); }} />)}</View>
+      <Card style={s.section}><Heading level={3}>{t("v2.goalLanguage")}</Heading>
+        <View style={s.chips}>{LANGUAGES.map(code => <Chip key={code} label={languageName(code, i18n.language)} selected={language === code}
+          onPress={() => { if (!create.isPending) setLanguage(code); }} />)}</View>
+        <Field value={language} onChangeText={setLanguage} accessibilityLabel={t("v2.customLanguage")} placeholder={t("v2.customLanguage")} autoCapitalize="none" autoCorrect={false} editable={!create.isPending} />
+        <Body small muted>{t("newProject.sourceLanguage")}</Body>
+        <Body small>{t("v2.targetLanguage")}</Body><Field value={target} onChangeText={setTarget} accessibilityLabel={t("v2.targetLanguage")} placeholder="en, fr, pt-BR…" autoCapitalize="none" autoCorrect={false} editable={!create.isPending} />
+      </Card>
+      <Body small muted>{t("v2.scopeNote")}</Body>
+      {create.isError ? <Card tone="coral"><Body>{t("common.loadError")}</Body></Card> : null}
+      <Button label={t("v2.goalSubmit")} loading={create.isPending} disabled={!valid} onPress={() => create.mutate()} />
+    </ScrollView>
+  </Screen>;
 }
-
-const s = StyleSheet.create({
-  head: { padding: space.lg, gap: space.md },
-  list: { paddingHorizontal: space.lg, paddingBottom: space.lg },
-  lang: { flexDirection: "row", alignItems: "center", paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.field, backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.border },
-  langOn: { borderColor: colors.cobalt, backgroundColor: colors.skySoft },
-  langName: { fontFamily: fonts.bodySemi, fontSize: 16, color: colors.ink },
-  langSub: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
-  footer: { padding: space.lg, backgroundColor: colors.sidebar, borderTopWidth: 1, borderTopColor: colors.border },
-});
+const s = StyleSheet.create({ page: { gap: space.xl, paddingBottom: 48 }, chips: { flexDirection: "row", flexWrap: "wrap", gap: space.sm }, section: { gap: space.lg } });

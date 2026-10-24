@@ -3,6 +3,7 @@ export const config = {
   apiUrl: process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8787",
   supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL ?? "",
   supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? "",
+  supabaseRealtimeEnabled: process.env.EXPO_PUBLIC_SUPABASE_REALTIME_ENABLED !== "false",
   whopClientId: process.env.EXPO_PUBLIC_WHOP_CLIENT_ID ?? "",
   whopOAuthBase:
     process.env.EXPO_PUBLIC_WHOP_ENV === "production" ? "https://api.whop.com" : "https://sandbox-api.whop.com",

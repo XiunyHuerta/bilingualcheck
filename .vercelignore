@@ -3,3 +3,14 @@ video/
 docs/
 public/
 vendor/
+
+# Los despliegues usan variables de Vercel, nunca credenciales locales.
+.env*
+**/.env*
+**/.vercel/
+**/.codex-local/
+**/.expo/
+**/node_modules/
+apps/api/dist/
+apps/mobile/dist/
+**/*.tsbuildinfo

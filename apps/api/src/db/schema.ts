@@ -9,8 +9,10 @@ import {
   text,
   timestamp,
   uuid,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
-import type { Brief, Card, ProjectStatus, SubmissionReview } from "@bc/shared";
+import type { Brief, BusinessProfile, Card, CollaborationRole, MeetingStatus, ProjectStatus, SubmissionReview } from "@bc/shared";
+import type { ProfessionalSummary, ProjectTask, TaskStatus } from "@bc/shared";
 
 // Modelo de datos del doc 07. El estado del proyecto solo lo cambia el servidor.
 
@@ -25,6 +27,7 @@ export const users = pgTable("users", {
   name: text("name"),
   ui_language: text("ui_language").notNull().default("es"),
   business_name: text("business_name"),
+  business_profile: jsonb("business_profile").$type<BusinessProfile>(),
   created_at: createdAt(),
 });
 
@@ -131,7 +134,7 @@ export const submissions = pgTable("submissions", {
   terac_submission_id: text("terac_submission_id").notNull().unique(),
   status: text("status").notNull(),
   // Solo nombre y experiencia resumida: nunca email ni LinkedIn del profesional.
-  participant_summary: jsonb("participant_summary").$type<{ name: string | null; experience: string[] }>(),
+  participant_summary: jsonb("participant_summary").$type<ProfessionalSummary>(),
   ai_review: jsonb("ai_review").$type<SubmissionReview>(),
   client_decision: text("client_decision").$type<"approved" | "changes_requested">(),
   client_feedback: text("client_feedback"),
@@ -144,6 +147,25 @@ export const submissions = pgTable("submissions", {
   created_at: createdAt(),
   updated_at: updatedAt(),
 });
+
+// Direct client/professional communication is separate from the AI conversation.
+export const collaboration = pgTable("project_collaboration", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  project_id: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  submission_id: uuid("submission_id").notNull().references(() => submissions.id, { onDelete: "cascade" }),
+  kind: text("kind").$type<"message" | "meeting">().notNull(),
+  author: text("author").$type<CollaborationRole>().notNull(),
+  message: text("message").notNull(),
+  starts_at: timestamp("starts_at", { withTimezone: true }),
+  duration_minutes: integer("duration_minutes"),
+  meeting_url: text("meeting_url"),
+  status: text("status").$type<MeetingStatus>(),
+  version: integer("version").notNull().default(1),
+  updated_by: text("updated_by").$type<CollaborationRole>().notNull(),
+  client_read_at: timestamp("client_read_at", { withTimezone: true }),
+  created_at: createdAt(),
+  updated_at: updatedAt(),
+}, (t) => [index("collaboration_project_idx").on(t.project_id, t.submission_id, t.updated_at)]);
 
 export const agentRuns = pgTable("agent_runs", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -189,3 +211,30 @@ export const toolInvocations = pgTable(
 export type Project = typeof projects.$inferSelect;
 export type Message = typeof messages.$inferSelect;
 export type User = typeof users.$inferSelect;
+
+export const projectTasks = pgTable("project_tasks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  project_id: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  origin_key: text("origin_key").notNull(),
+  title: text("title").notNull(),
+  description: text("description").notNull().default(""),
+  status: text("status").$type<TaskStatus>().notNull().default("todo"),
+  assigned_submission_id: uuid("assigned_submission_id").references(() => submissions.id, { onDelete: "set null" }),
+  due_at: timestamp("due_at", { withTimezone: true }),
+  dependencies: jsonb("dependencies").$type<string[]>().notNull().default([]),
+  deliverables: jsonb("deliverables").$type<string[]>().notNull().default([]),
+  comments: jsonb("comments").$type<ProjectTask["comments"]>().notNull().default([]),
+  version: integer("version").notNull().default(1),
+  created_at: createdAt(), updated_at: updatedAt(),
+}, (t) => [uniqueIndex("project_tasks_origin_idx").on(t.project_id, t.origin_key)]);
+
+export const projectActivity = pgTable("project_activity", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  project_id: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  actor: text("actor").$type<"owner" | "agent" | "professional" | "system">().notNull(),
+  action: text("action").notNull(),
+  previous_status: text("previous_status"), new_status: text("new_status"),
+  task_id: uuid("task_id").references(() => projectTasks.id, { onDelete: "set null" }),
+  submission_id: uuid("submission_id").references(() => submissions.id, { onDelete: "set null" }),
+  detail: text("detail"), created_at: createdAt(),
+}, (t) => [index("project_activity_recent_idx").on(t.project_id, t.created_at)]);

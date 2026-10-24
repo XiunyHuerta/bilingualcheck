@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .vercel/
+.codex-local/
 .expo/
 *.log
 .DS_Store

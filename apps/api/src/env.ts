@@ -15,14 +15,17 @@ const EnvSchema = z.object({
 
   DATABASE_URL: z.string().url(),
   SUPABASE_URL: z.string().url(),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+  // Storage se configura por separado; no debe bloquear OAuth ni la base de datos.
+  SUPABASE_SERVICE_ROLE_KEY: optional,
   STORAGE_BUCKET_UPLOADS: z.string().default("client-uploads"),
   STORAGE_BUCKET_DELIVERABLES: z.string().default("deliverables"),
 
-  ANTHROPIC_API_KEY: optional,
-  AGENT_MODEL: z.string().default("claude-sonnet-5-5"),
-  REVIEW_MODEL: z.string().default("claude-opus-5-5"),
+  GEMINI_API_KEY: optional,
+  AGENT_MODEL: z.string().default("gemini-3.5-flash-lite"),
+  REVIEW_MODEL: z.string().default("gemini-3.5-flash-lite"),
+  UI_TRANSLATION_MODEL: z.string().default("gemini-3.1-flash-lite"),
   AGENT_MAX_TOOL_CALLS: z.coerce.number().int().positive().default(8),
+  DEMO_PAYMENTS_ENABLED: z.enum(["true", "false"]).default("false").transform((v) => v === "true"),
 
   TERAC_MODE: z.enum(["live", "replay"]).default("replay"),
   TERAC_BASE_URL: z.string().url().default("https://terac.com/api/external/v2"),
@@ -55,7 +58,7 @@ export class ConfigError extends Error {
 }
 
 // Solo lo que necesita el cliente de Terac: los scripts `terac:*` deben funcionar con la
-// API key aunque Supabase, Whop o Anthropic todavía no estén configurados.
+// API key aunque Supabase, Whop o Gemini todavía no estén configurados.
 const TeracEnvSchema = EnvSchema.pick({
   TERAC_MODE: true,
   TERAC_BASE_URL: true,

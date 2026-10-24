@@ -24,6 +24,7 @@ export async function syncSubmission(teracSubmissionId: string) {
   if (!opportunity) throw new ApiError("NOT_FOUND", "La oportunidad no pertenece a BilingualCheck");
   const summary = {
     name: external.participant_name,
+    specialty: external.participant_background?.experiences.find(experience => experience.role?.trim())?.role?.trim() ?? null,
     experience: (external.participant_background?.experiences ?? []).slice(0, 3)
       .map((e) => [e.role, e.company].filter(Boolean).join(" · ")),
   };

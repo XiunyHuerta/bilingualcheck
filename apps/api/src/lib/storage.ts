@@ -1,10 +1,10 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { env } from "../env";
+import { env, required } from "../env";
 
 let client: SupabaseClient | undefined;
 
 function supabase() {
-  client ??= createClient(env().SUPABASE_URL, env().SUPABASE_SERVICE_ROLE_KEY, {
+  client ??= createClient(env().SUPABASE_URL, required("SUPABASE_SERVICE_ROLE_KEY"), {
     auth: { persistSession: false },
   });
   return client;
@@ -34,5 +34,12 @@ export async function download(bucket: string, path: string): Promise<Buffer> {
 export async function storeTextDelivery(path: string, text: string) {
   const { error } = await supabase().storage.from(env().STORAGE_BUCKET_DELIVERABLES)
     .upload(path, Buffer.from(text, "utf8"), { contentType: "text/plain; charset=utf-8", upsert: false });
+  if (error) throw error;
+}
+
+/** Profile images stay in the private uploads bucket, with a fresh path per upload. */
+export async function storeProfileImage(path: string, data: Uint8Array, contentType: string) {
+  const { error } = await supabase().storage.from(env().STORAGE_BUCKET_UPLOADS)
+    .upload(path, data, { contentType, upsert: false });
   if (error) throw error;
 }

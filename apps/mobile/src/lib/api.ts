@@ -1,4 +1,4 @@
-import type { ApiError, Brief, Card, ProjectStatus, SubmissionReview } from "@bc/shared";
+import type { ApiError, Brief, BusinessProfile, Card, ProfessionalSummary, ProjectStatus, SubmissionReview } from "@bc/shared";
 import { config } from "./config";
 import { useSession } from "./session";
 
@@ -34,7 +34,8 @@ export const post = <T>(path: string, body?: unknown) =>
 
 // ── Tipos de respuesta (doc 07) ─────────────────────────────────
 
-export type User = { id: string; name: string | null; email: string | null; ui_language: string; business_name: string | null };
+export type User = { id: string; name: string | null; email: string | null; ui_language: string; business_name: string | null;
+  business_profile?: BusinessProfile | null; profile_media?: Record<string, string>; uploads_enabled?: boolean };
 
 export type Project = {
   id: string;
@@ -62,7 +63,7 @@ export type Quote = { id: string; status: string; total_usd: number | null; eta_
 export type Submission = {
   id: string;
   status: string;
-  participant_summary: { name: string | null; experience: string[] } | null;
+  participant_summary: ProfessionalSummary | null;
   ai_review: SubmissionReview | null;
   client_decision: "approved" | "changes_requested" | null;
   client_feedback: string | null;
@@ -73,4 +74,5 @@ export type Submission = {
   review_error?: string | null;
 };
 
-export type ProjectDetail = { project: Project; quote: Quote | null; submissions: Submission[] };
+export type ProjectDetail = { project: Project; quote: Quote | null; submissions: Submission[];
+  demo_payments_enabled?: boolean; payment_is_demo?: boolean; brief_editable?: boolean; uploads_enabled?: boolean };

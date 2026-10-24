@@ -19,14 +19,14 @@ El agente no es un proceso que vive para siempre. Cada **evento** lanza un *turn
 | `submission_received` | Webhook de Terac | Revisar la entrega frente al brief y presentarla. |
 | `client_decision` | El cliente aprueba / pide cambios | Aprobar en Terac o preparar la corrección. |
 
-Un turno = cargar contexto → llamar a Claude con herramientas → ejecutar herramientas en bucle → guardar mensajes, estado y traza en `agent_runs`.
+Un turno = cargar contexto → llamar a Gemini con herramientas → ejecutar herramientas en bucle → guardar mensajes, estado y traza en `agent_runs`.
 
 ```mermaid
 flowchart TD
     E[Evento] --> L[Cargar proyecto, brief,<br/>últimos N mensajes, estado]
     L --> P[Construir prompt del sistema<br/>+ herramientas permitidas por estado]
-    P --> C[Claude]
-    C -->|tool_use| V{¿Herramienta permitida<br/>en este estado?}
+    P --> C[Gemini 3.6 Flash]
+    C -->|tool call| V{¿Herramienta permitida<br/>en este estado?}
     V -->|no| X[Devolver error al modelo]
     X --> C
     V -->|sí| H[Ejecutar herramienta]
@@ -37,9 +37,11 @@ flowchart TD
 
 ## Modelos
 
-- **Chat y orquestación**: `claude-sonnet-5-5` (rápido, buen uso de herramientas, multilingüe).
-- **Revisión de entregas**: `claude-opus-5-5` (más criterio para comparar el entregable con el brief y explicar los cambios culturales).
+- **Chat y orquestación**: `gemini-3.6-flash`, configurable con `AGENT_MODEL`.
+- **Revisión de entregas**: `gemini-3.6-flash`, configurable con `REVIEW_MODEL`, salida estructurada validada por Zod.
 - Límite de iteraciones por turno: 8 llamadas a herramientas. Si se supera, el turno termina y se avisa al operador.
+
+El backend usa `ai` + `@ai-sdk/google` y `GEMINI_API_KEY`, sin claves en el cliente. Razonamiento `low`, máximo de 16 000 tokens de salida por llamada, un reintento ante errores transitorios y 90 segundos de timeout por llamada. El historial del bucle conserva las firmas de Gemini junto con las llamadas y sus resultados.
 
 ## Herramientas (tool use)
 
@@ -108,7 +110,7 @@ Brief actual: {brief_json}
 
 ## Revisión de entregas
 
-Prompt de revisión (Opus), con salida estructurada:
+Prompt de revisión (Gemini), con salida estructurada:
 
 ```ts
 type SubmissionReview = {

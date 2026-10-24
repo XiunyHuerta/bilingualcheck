@@ -47,7 +47,7 @@ test("empty quoted placeholders, biz_/prod_, templates and real IDs", () => {
 
 test("core required; optional AI/OAuth/payments are selectable independently", () => {
   assert.equal(evaluateApp("api", core).some((r) => r.failed), false);
-  assert.deepEqual(evaluateApp("api", {}, ["ai"]).filter((r) => r.failed).map((r) => r.name), ["ANTHROPIC_API_KEY"]);
+  assert.deepEqual(evaluateApp("api", {}, ["ai"]).filter((r) => r.failed).map((r) => r.name), ["GEMINI_API_KEY"]);
   assert.deepEqual(evaluateApp("api", {}, ["whop-oauth"]).filter((r) => r.failed).map((r) => r.name), ["WHOP_CLIENT_ID"]);
   assert.equal(evaluateApp("api", { SESSION_JWT_SECRET: "short" }).find((r) => r.name === "SESSION_JWT_SECRET").failed, true);
   assert.equal(evaluateApp("mobile", {}, ["core"]).filter((r) => r.failed).length, 2);
@@ -97,8 +97,8 @@ test("remote check requires login then exact project AND org; only read commands
 
 test("checker output never includes supplied secret values", () => {
   const secret = "do-not-print-fixture-value-123456789";
-  const result = spawnSync(process.execPath, [join(ROOT, "scripts/check-env.mjs"), "--group", "ai"], { env: { ...process.env, ANTHROPIC_API_KEY: secret }, encoding: "utf8" });
+  const result = spawnSync(process.execPath, [join(ROOT, "scripts/check-env.mjs"), "--group", "ai"], { env: { ...process.env, GEMINI_API_KEY: secret }, encoding: "utf8" });
   assert.equal(result.status, 0);
-  assert.ok(result.stdout.includes("ANTHROPIC_API_KEY: configured"));
+  assert.ok(result.stdout.includes("GEMINI_API_KEY: configured"));
   assert.ok(!(result.stdout + result.stderr).includes(secret));
 });

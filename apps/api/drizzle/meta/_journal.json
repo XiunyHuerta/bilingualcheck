@@ -15,6 +15,34 @@
       "when": 1792863567992,
       "tag": "0001_flawless_scarlet_spider",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792871862493,
+      "tag": "0002_sticky_millenium_guard",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792871948143,
+      "tag": "0003_business_profile",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792872502043,
+      "tag": "0004_workspace_v2",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792873588477,
+      "tag": "0005_workspace_assignment_events",
+      "breakpoints": true
     }
   ]
 }

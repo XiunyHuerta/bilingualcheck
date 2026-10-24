@@ -6,12 +6,12 @@ import { webhookRoutes, recoverPendingWebhooks } from "./webhooks";
 
 const mocks = vi.hoisted(() => ({
   claim: vi.fn(), process: vi.fn(), recover: vi.fn(), verifyWhop: vi.fn(), verifyTerac: vi.fn(),
-  required: vi.fn(), payments: vi.fn(), update: vi.fn(), getProject: vi.fn(), transition: vi.fn(),
+  required: vi.fn(), payments: vi.fn(), quotes: vi.fn(), update: vi.fn(), getProject: vi.fn(), transition: vi.fn(),
   agent: vi.fn(), syncSubmission: vi.fn(), tasks: [] as Array<() => Promise<unknown>>,
 }));
 vi.mock("../db/client", async () => ({
   schema: await import("../db/schema"),
-  db: () => ({ query: { payments: { findMany: mocks.payments } }, update: mocks.update }),
+  db: () => ({ query: { payments: { findMany: mocks.payments }, quotes: { findFirst: mocks.quotes } }, update: mocks.update }),
 }));
 vi.mock("../services/webhook-events", () => ({
   claimWebhookEvent: mocks.claim, processWebhookEvent: mocks.process, recoverWebhookEvents: mocks.recover,
@@ -49,6 +49,7 @@ describe("rutas de webhook", () => {
     mocks.claim.mockImplementation(async (provider, eventId, payload) => ({ provider, eventId, payload, attempts: 1 }));
     mocks.process.mockImplementation(async (claim, handler) => handler(claim.payload));
     mocks.payments.mockResolvedValue([{ ...payment }]);
+    mocks.quotes.mockResolvedValue({ id: "quote_1", status: "priced" });
     mocks.getProject.mockResolvedValue({ id: "project_1", status: "awaiting_payment" });
     mocks.transition.mockResolvedValue({ id: "project_1", status: "paid" });
     mocks.agent.mockResolvedValue(undefined);
@@ -70,6 +71,15 @@ describe("rutas de webhook", () => {
     expect(writes.map((write) => write.patch.status)).toEqual(["succeeded", "accepted"]);
     expect(mocks.transition).toHaveBeenCalledExactlyOnceWith("project_1", "awaiting_payment", "paid");
     expect(mocks.agent).toHaveBeenCalledExactlyOnceWith("project_1", { type: "payment_succeeded" });
+  });
+
+  it("registra un cobro antiguo sin aceptar el nuevo brief ni contratar", async () => {
+    mocks.quotes.mockResolvedValue({ id: "quote_1", status: "unavailable" });
+    await whop();
+    await finish();
+    expect(writes.map(write => write.patch.status)).toEqual(["succeeded"]);
+    expect(mocks.transition).not.toHaveBeenCalled();
+    expect(mocks.agent).not.toHaveBeenCalled();
   });
 
   it("responde duplicate sin programar trabajo si no hay claim", async () => {

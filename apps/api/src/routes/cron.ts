@@ -42,7 +42,7 @@ export async function pollQuotes(projectId?: string) {
         if (!Number.isFinite(perParticipant) || perParticipant <= 0) throw new Error("Terac devolvió un precio inválido");
         const price = priceQuote(perParticipant * (fr.submissionCount ?? 1), env().FEE_RATE);
         const cap = Math.min(env().BUDGET_CAP_USD, project.brief?.budget_usd ?? Infinity);
-        await db()
+        const [priced] = await db()
           .update(schema.quotes)
           .set({
             status: "priced",
@@ -50,7 +50,8 @@ export async function pollQuotes(projectId?: string) {
             eta_days: fr.timelineHours ? Math.ceil(fr.timelineHours / 24) : null,
             updated_at: new Date(),
           })
-          .where(eq(schema.quotes.id, quote.id));
+          .where(and(eq(schema.quotes.id, quote.id), eq(schema.quotes.status, "requested"))).returning();
+        if (!priced) continue; // El cliente editó el brief mientras respondía Terac.
         if (price.total_usd > cap || price.terac_cost_usd > env().TERAC_SPEND_CAP_USD) {
           // Guardarraíl de presupuesto: no se presenta una cotización por encima del tope.
           await db().update(schema.quotes).set({ status: "unavailable" }).where(eq(schema.quotes.id, quote.id));

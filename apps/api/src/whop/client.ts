@@ -109,7 +109,8 @@ export async function createProjectCheckout(input: {
         plan_type: "one_time",
         currency: "usd",
         initial_price: input.totalUsd,
-        title: input.title.slice(0, 80),
+        // Whop rechaza títulos de planes con más de 30 caracteres.
+        title: Array.from(input.title).slice(0, 30).join(""),
         visibility: "hidden",
         force_create_new_plan: true,
         metadata: { project_id: input.projectId },

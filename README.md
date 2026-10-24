@@ -2,15 +2,21 @@
 
 > *Tu negocio merece ser entendido.* — Agente de IA que contrata profesionales reales por **Terac** y cobra con **Whop**. Planificación completa en [`docs/`](docs/README.md).
 
+**Demo para el jurado:** [bilingualcheck-app.vercel.app](https://bilingualcheck-app.vercel.app/). La portada es pública, incluso con una sesión iniciada. El panel de la cuenta está en `/dashboard`.
+
+El recorrido conserva seis pasos: conversación con IA, brief, cotización, pago, trabajo y entrega. Para evaluar sin cargos, selecciona **Pago demo de Whop · Simular pago** y luego **Simular entrega del profesional**. La conversación y la revisión usan Gemini; la contratación y el trabajo de Terac se identifican como simulados. [Guía de evaluación y comprobaciones](docs/12-demo-jurado.md).
+
 ```
-apps/api        Hono (Vercel) · Drizzle + Supabase · agente Claude · Terac · Whop
+apps/api        Hono (Vercel) · Drizzle + Supabase · agente Gemini · Terac · Whop
 apps/mobile     Expo SDK 58 · Expo Router (src/app) · React Query · Realtime · iOS, Android y web
 packages/shared Estados y transiciones, esquemas zod, idiomas BCP-47, precio
 vendor/terac    openapi.json de Terac v2 (beta) descargado el día 0
 docs/           Planificación, despliegue (09), entregas (10) y guía de estilo UI
 ```
 
-## Estado del proyecto
+## Plan inicial de implementación (referencia)
+
+La tabla siguiente conserva el plan original. El estado de la demo y sus límites actuales se documentan en [la guía del jurado](docs/12-demo-jurado.md).
 
 > **Fase actual: 5 de 6 — Contratación y entregas (en curso).** Actualizado el 2026-10-24.
 > La fase 5 ya incluye portal de entrega textual, revisión con IA, correcciones y descarga. Falta validar el circuito con cuentas reales. La configuración de servicios sigue incompleta; tener código o un despliegue `READY` no acredita que login, pagos o contratación funcionen.
@@ -40,6 +46,8 @@ docs/           Planificación, despliegue (09), entregas (10) y guía de estilo
 
 La interfaz sigue [`docs/styleUIguide.md`](docs/styleUIguide.md): paleta cobalt/sky/gold/cream/coral/sage/ink, Manrope (títulos) + DM Sans (texto), radios 30/22/14, sombras suaves y movimiento de entrada/pop/marcador. Los tokens viven en `apps/mobile/src/theme/tokens.ts` y los componentes en `apps/mobile/src/components/` (`ui`, `cards`, `chat`, `stepper`, `motion`). Los logos y la ilustración salen de `apps/mobile/assets/brand/` (copia de `public/brand/`). Para verla en el navegador: `pnpm dev:mobile` y pulsar `w`.
 
+La web adapta la distribución al ancho de la ventana: desde 768 px muestra cuadrículas, desde 1024 px incorpora navegación superior y paneles en columnas, y desde 1440 px muestra tres proyectos o cuatro idiomas por fila. El contenido crece hasta 1280 px; las pantallas de confirmación mantienen un ancho de lectura reducido. Los puntos de corte están en `apps/mobile/src/theme/responsive.ts`. El portal del profesional también distribuye el brief y la entrega en dos columnas en escritorio.
+
 ## Puesta en marcha
 
 ```bash
@@ -60,7 +68,7 @@ Las plantillas son `apps/api/.env.example` y `apps/mobile/.env.example`. Los `.e
 | `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → Database / API (usar el pooler, puerto 6543) |
 | `SESSION_JWT_SECRET` | Supabase → Settings → API → JWT Settings (*legacy JWT secret*). Así Realtime + RLS aceptan nuestro JWT |
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Settings → API (anon key, es pública) |
-| `ANTHROPIC_API_KEY` | console.anthropic.com |
+| `GEMINI_API_KEY` | aistudio.google.com |
 | `TERAC_API_KEY` | Terac → organización → API keys (la creas tú; solo va en `apps/api/.env`) |
 | `TERAC_PROJECT_ID` | `pnpm terac:setup`: comprueba la clave, busca o crea el proyecto «BilingualCheck» y lo guarda en `.env` |
 | `TERAC_WEBHOOK_SECRET` | `pnpm terac:webhooks` lo guarda localmente; configurar Vercel y confirmar con `--confirm <id>` |

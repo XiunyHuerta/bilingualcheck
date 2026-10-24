@@ -1,4 +1,5 @@
-import { CreateAssetBody, CreateProjectBody, DecisionBody, PostMessageBody } from "@bc/shared";
+import { BriefSchema, CreateAssetBody, CreateProjectBody, DecisionBody, PostMessageBody } from "@bc/shared";
+import { z } from "zod";
 import { and, desc, eq, inArray, lt } from "drizzle-orm";
 import { Hono } from "hono";
 import { runAgentTurn } from "../agent/run";
@@ -15,6 +16,9 @@ import { createProjectCheckout } from "../whop/client";
 import { checkoutReturnTo, parseCheckoutRequestBody } from "../whop/redirects";
 import { reviewPendingSubmission } from "../services/submissions";
 import { pollQuotes } from "./cron";
+import { demoPaymentsEnabled, isDemoPayment, simulatePayment } from "../services/demo-payments";
+import { briefIsEditable, editProjectBrief } from "../services/brief-edit";
+import { generateDemoDelivery, startDemoWork } from "../services/demo-work";
 
 export const projectRoutes = new Hono<AuthVars>();
 projectRoutes.use("*", requireSession);
@@ -43,7 +47,9 @@ projectRoutes.post("/projects", async (c) => {
     .insert(schema.projects)
     .values({ user_id: c.get("userId"), source_language: input.source_language, target_language: input.target_language })
     .returning();
-  runInBackground("greeting", () => runAgentTurn(project!.id, { type: "project_created" }));
+  if (input.goal) await addMessage({ projectId: project!.id, userId: c.get("userId"), role: "user",
+    content: input.goal, language: input.source_language });
+  runInBackground("greeting", () => runAgentTurn(project!.id, { type: input.goal ? "user_message" : "project_created" }));
   return c.json({ project }, 201);
 });
 
@@ -58,7 +64,10 @@ projectRoutes.get("/projects/:id", async (c) => {
   const submissions = opportunity
     ? await db().query.submissions.findMany({ where: eq(schema.submissions.opportunity_id, opportunity.id) })
     : [];
-  return c.json({ project, quote: quote ?? null, payment: payment ?? null, submissions });
+  return c.json({ project, quote: quote ?? null, payment: payment ?? null, submissions,
+    demo_payments_enabled: demoPaymentsEnabled(), payment_is_demo: isDemoPayment(payment),
+    uploads_enabled: Boolean(env().SUPABASE_SERVICE_ROLE_KEY),
+    brief_editable: briefIsEditable(project, payment, Boolean(opportunity)) });
 });
 
 // ── Chat ──────────────────────────────────────────────────────────
@@ -97,12 +106,24 @@ projectRoutes.post("/projects/:id/messages", async (c) => {
   return c.json({ message }, 202);
 });
 
+const EditBriefBody = z.object({ brief: BriefSchema, expected_updated_at: z.string().datetime(),
+  content: z.string().min(1).max(20_000), ui_language: z.enum(["es", "en", "pt"]).default("es") });
+projectRoutes.post("/projects/:id/brief/edit", async (c) => {
+  const input = await body(c, EditBriefBody);
+  return c.json(await editProjectBrief(c.req.param("id"), c.get("userId"), input));
+});
+
 projectRoutes.post("/projects/:id/brief/confirm", async (c) => {
   const project = await getOwnedProject(c.req.param("id"), c.get("userId"));
-  requireStatus(project.status, ["brief_ready"], "confirmar el brief");
+  const payment = project.status === "paid" ? await db().query.payments.findFirst({
+    where: eq(schema.payments.project_id, project.id), orderBy: desc(schema.payments.created_at),
+  }) : null;
+  const paidDemo = project.status === "paid" && demoPaymentsEnabled() && isDemoPayment(payment);
+  requireStatus(project.status, paidDemo ? ["paid"] : ["brief_ready"], "confirmar el brief");
+  if (project.agent_busy) throw new ApiError("INVALID_STATE", "El agente está actualizando el brief");
   await db().update(schema.projects).set({ brief_confirmed: true }).where(eq(schema.projects.id, project.id));
   await addMessage({ projectId: project.id, userId: project.user_id, role: "system_event", content: "brief_confirmed" });
-  runInBackground("brief_confirmed", () => runAgentTurn(project.id, { type: "brief_confirmed" }));
+  runInBackground("brief_confirmed", () => runAgentTurn(project.id, { type: paidDemo ? "demo_payment_succeeded" : "brief_confirmed" }));
   return c.json({ ok: true }, 202);
 });
 
@@ -143,6 +164,17 @@ projectRoutes.get("/projects/:id/assets/:assetId/url", async (c) => {
 });
 
 // ── Cotización y pago ─────────────────────────────────────────────
+
+projectRoutes.post("/projects/:id/payment/demo", async (c) => {
+  const projectId = c.req.param("id");
+  const result = await simulatePayment(projectId, c.get("userId"));
+  if (result.resume) await startDemoWork(projectId, c.get("userId"));
+  return c.json({ demo: result.demo, reused: result.reused }, 202);
+});
+
+projectRoutes.post("/projects/:id/demo/delivery", async (c) => {
+  return c.json(await generateDemoDelivery(c.req.param("id"), c.get("userId")));
+});
 
 projectRoutes.post("/projects/:id/quote/accept", async (c) => {
   const { platform } = parseCheckoutRequestBody(await c.req.text());

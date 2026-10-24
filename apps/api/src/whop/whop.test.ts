@@ -201,6 +201,13 @@ describe("checkout alojado", () => {
       redirect_url: `https://bilingualcheck-api.vercel.app/checkout/return?platform=native&project_id=${projectId}`,
     }));
   });
+  it("respeta el límite de título de Whop para nombres largos y Unicode", async () => {
+    const title = "📝 Revisión bilingüe para una campaña internacional";
+    await createProjectCheckout({ ...checkout, title });
+    const sent = mocks.createCheckout.mock.calls[0]![0];
+    expect(Array.from(sent.plan.title)).toHaveLength(30);
+    expect(sent.plan.title).toBe(Array.from(title).slice(0, 30).join(""));
+  });
   it("el retorno por defecto es web y codifica el id del proyecto", () => {
     const url = new URL(checkoutRedirectUrl("id&status=paid"));
     expect(url.searchParams.get("project_id")).toBe("id&status=paid");

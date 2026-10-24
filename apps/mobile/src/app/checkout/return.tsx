@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Platform, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Platform, ScrollView, StyleSheet, View } from "react-native";
 import { Reveal } from "@/components/motion";
 import { Body, Button, Card, Heading, Logo, Screen } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -41,8 +41,8 @@ export default function CheckoutReturn() {
   }, [data, project_id]);
 
   return (
-    <Screen blobs>
-      <View style={s.content}>
+    <Screen blobs size="compact">
+      <ScrollView contentContainerStyle={s.content}>
         <Reveal>
           <Logo variant="horizontal" height={30} />
         </Reveal>
@@ -68,12 +68,12 @@ export default function CheckoutReturn() {
             </Card>
           </Reveal>
         </View>
-      </View>
+      </ScrollView>
     </Screen>
   );
 }
 
 const s = StyleSheet.create({
-  content: { flex: 1, padding: space.xl },
+  content: { flexGrow: 1, padding: space.xl },
   card: { alignItems: "center", gap: space.lg, paddingVertical: space.xl },
 });

@@ -11,6 +11,13 @@ alter table quotes enable row level security;
 alter table payments enable row level security;
 alter table terac_opportunities enable row level security;
 alter table submissions enable row level security;
+alter table project_collaboration enable row level security;
+alter table project_tasks enable row level security;
+alter table project_activity enable row level security;
+-- Workspace data is served through owner-checked API routes only.
+revoke all on table project_tasks, project_activity from anon, authenticated;
+-- Contact is accessible only through authenticated API routes, including read receipts.
+revoke all on table project_collaboration from anon, authenticated;
 alter table agent_runs enable row level security;
 alter table webhook_events enable row level security;
 alter table tool_invocations enable row level security;

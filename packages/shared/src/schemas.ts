@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { BusinessProfile } from "./business-profile";
 import { isValidLanguageTag } from "./language";
 import { PROJECT_STATUSES } from "./status";
 
@@ -58,6 +59,7 @@ export const CardSchema = z.discriminatedUnion("type", [
   }),
   z.object({ type: z.literal("delivery"), submission_id: z.string(), review: SubmissionReviewSchema }),
   z.object({ type: z.literal("recommendation"), text: z.string() }),
+  z.object({ type: z.literal("new_project"), goal: z.string().trim().min(1).max(8000), reason: z.string().trim().min(1).max(2000) }),
 ]);
 export type Card = z.infer<typeof CardSchema>;
 
@@ -70,12 +72,13 @@ export const AuthWhopBody = z.object({
 });
 
 export const PatchMeBody = z
-  .object({ ui_language: LanguageTag, business_name: z.string().min(1).max(200) })
+  .object({ ui_language: LanguageTag, business_name: z.string().trim().max(200).nullable(), business_profile: BusinessProfile })
   .partial();
 
 export const CreateProjectBody = z.object({
   source_language: LanguageTag,
   target_language: LanguageTag.optional(),
+  goal: z.string().trim().min(1).max(8000).optional(),
 });
 
 export const PostMessageBody = z.object({

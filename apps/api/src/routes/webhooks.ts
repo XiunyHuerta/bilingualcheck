@@ -66,6 +66,11 @@ async function handleWhopEvent(event: WhopWebhook) {
     await db().update(schema.payments)
       .set({ status: "succeeded", whop_payment_id: payment.id, updated_at: new Date() })
       .where(eq(schema.payments.id, row.id));
+    const quote = await db().query.quotes.findFirst({ where: eq(schema.quotes.id, row.quote_id) });
+    if (!quote || quote.status === "unavailable") {
+      console.warn(`[whop] pago ${payment.id} recibido para una cotización sustituida; requiere revisión, sin contratación automática`);
+      return;
+    }
     await db().update(schema.quotes).set({ status: "accepted" }).where(eq(schema.quotes.id, row.quote_id));
     const project = await getProject(row.project_id);
     if (project.status === "awaiting_payment") {

@@ -60,11 +60,11 @@ export const STATUS_TONE: Record<ProjectStatus, Tone> = {
 export const fonts = {
   heading: "Manrope_800ExtraBold",
   headingBold: "Manrope_700Bold",
-  body: "DMSans_400Regular",
-  bodyMedium: "DMSans_500Medium",
-  bodySemi: "DMSans_600SemiBold",
-  bodyBold: "DMSans_700Bold",
-  italic: "DMSans_400Regular_Italic",
+  body: "Inter_400Regular",
+  bodyMedium: "Inter_500Medium",
+  bodySemi: "Inter_600SemiBold",
+  bodyBold: "Inter_700Bold",
+  italic: "Inter_400Regular_Italic",
 } as const;
 
 // Base de 4. Entre tarjetas 20–28; padding interno 18–26.
@@ -79,5 +79,5 @@ export const shadow = {
   window: "0 40px 100px rgba(32, 40, 53, 0.18)",
 } as const;
 
-// Ancho máximo de la columna de contenido (en web y tablets).
+// Ancho máximo en pantallas pequeñas; responsive.ts amplía el contenido en tablets y escritorio.
 export const MAX_WIDTH = 640;

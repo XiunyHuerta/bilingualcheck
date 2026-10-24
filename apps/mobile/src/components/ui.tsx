@@ -18,30 +18,35 @@ import {
 } from "react-native";
 import { type Edge, SafeAreaView } from "react-native-safe-area-context";
 import { useConceptDemo } from "@/lib/health";
-import { colors, fonts, MAX_WIDTH, radius, shadow, space, STATUS_TONE, type Tone, tones } from "@/theme/tokens";
+import { contentWidths, useResponsive } from "@/theme/responsive";
+import { colors, fonts, radius, shadow, space, STATUS_TONE, type Tone, tones } from "@/theme/tokens";
 
 // Sistema de componentes de BilingualCheck (docs/styleUIguide.md §4).
 
 // ── Pantalla ──────────────────────────────────────────────────────
 
-/** Fondo `cream` con blobs grandes de la paleta en las esquinas y columna centrada. */
+/** Fluid page with a readable limit; compact is for callback/status screens. */
 export function Screen({
   children,
   blobs,
   edges = ["top", "bottom"],
-  maxWidth = MAX_WIDTH,
+  maxWidth,
+  size = "page",
   style,
 }: {
   children: ReactNode;
   blobs?: boolean;
   edges?: Edge[];
   maxWidth?: number;
+  size?: keyof typeof contentWidths;
   style?: StyleProp<ViewStyle>;
 }) {
+  const { pageWidth } = useResponsive();
+  const limit = maxWidth ?? (size === "page" ? pageWidth : contentWidths[size]);
   return (
     <SafeAreaView edges={edges} style={s.screen}>
       {blobs && <Blobs />}
-      <View style={[s.column, { maxWidth }, style]}>{children}</View>
+      <View style={[s.column, { maxWidth: limit }, style]}>{children}</View>
     </SafeAreaView>
   );
 }
@@ -118,15 +123,16 @@ function emphasize(text: string, style: StyleProp<TextStyle>): ReactNode[] {
 }
 
 export function Heading({ children, level = 1, style }: { children: string; level?: 1 | 2 | 3; style?: StyleProp<TextStyle> }) {
+  const { isDesktop } = useResponsive();
   return (
-    <Text accessibilityRole="header" style={[s.heading, level === 1 && s.h1, level === 2 && s.h2, level === 3 && s.h3, style]}>
+    <Text accessibilityRole="header" style={[s.heading, level === 1 && s.h1, level === 1 && isDesktop && s.h1Desktop, level === 2 && s.h2, level === 3 && s.h3, style]}>
       {emphasize(children, s.keyword)}
     </Text>
   );
 }
 
-export function Body({ children, muted, small, style }: { children: ReactNode; muted?: boolean; small?: boolean; style?: StyleProp<TextStyle> }) {
-  return <Text style={[s.body, small && s.small, muted && { color: colors.muted }, style]}>{children}</Text>;
+export function Body({ children, muted, small, style, numberOfLines }: { children: ReactNode; muted?: boolean; small?: boolean; style?: StyleProp<TextStyle>; numberOfLines?: number }) {
+  return <Text numberOfLines={numberOfLines} style={[s.body, small && s.small, muted && { color: colors.muted }, style]}>{children}</Text>;
 }
 
 export function Eyebrow({ children, style }: { children: string; style?: StyleProp<TextStyle> }) {
@@ -148,6 +154,7 @@ export function Button({
   disabled,
   compact,
   style,
+  accessibilityLabel,
 }: {
   label: string;
   onPress: () => void;
@@ -156,12 +163,14 @@ export function Button({
   disabled?: boolean;
   compact?: boolean;
   style?: StyleProp<ViewStyle>;
+  accessibilityLabel?: string;
 }) {
   const solid = variant === "primary" || variant === "success";
   const textColor = solid ? colors.white : colors.cobalt;
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled: Boolean(disabled || loading), busy: Boolean(loading) }}
       onPress={onPress}
       disabled={disabled || loading}
@@ -186,13 +195,14 @@ export function Button({
 }
 
 /** Opción seleccionable (idioma de la interfaz, filtros). */
-export function Chip({ label, selected, onPress }: { label: string; selected?: boolean; onPress: () => void }) {
+export function Chip({ label, selected, onPress, disabled }: { label: string; selected?: boolean; onPress: () => void; disabled?: boolean }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityState={{ selected: Boolean(selected) }}
+      accessibilityState={{ selected: Boolean(selected), disabled: Boolean(disabled) }}
+      disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [s.chip, selected && s.chipSelected, pressed && { opacity: 0.8 }]}
+      style={({ pressed }) => [s.chip, selected && s.chipSelected, disabled && { opacity: 0.5 }, pressed && { opacity: 0.8 }]}
     >
       <Text style={[s.chipText, selected && { color: colors.white }]}>{label}</Text>
     </Pressable>
@@ -302,7 +312,11 @@ export function Check({ size = 24 }: { size?: number }) {
 
 // ── Iconos de la barra de pestañas (sin dependencias) ─────────────
 
-export function Glyph({ name, color, size = 22 }: { name: "projects" | "profile"; color: ColorValue; size?: number }) {
+export function Glyph({ name, color, size = 22 }: { name: "projects" | "profile" | "notifications"; color: ColorValue; size?: number }) {
+  if (name === "notifications") return <View style={{ width: size, height: size, alignItems: "center" }}>
+    <View style={{ marginTop: 2, width: size * 0.72, height: size * 0.65, borderTopLeftRadius: size, borderTopRightRadius: size, borderBottomLeftRadius: 3, borderBottomRightRadius: 3, backgroundColor: color }} />
+    <View style={{ marginTop: 2, width: size * 0.25, height: size * 0.16, borderRadius: size, backgroundColor: color }} />
+  </View>;
   if (name === "projects") {
     return (
       <View style={{ width: size, height: size }}>
@@ -321,11 +335,12 @@ export function Glyph({ name, color, size = 22 }: { name: "projects" | "profile"
 
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.cream, overflow: "hidden" },
-  column: { flex: 1, width: "100%", alignSelf: "center" },
+  column: { flex: 1, minHeight: 0, minWidth: 0, width: "100%", alignSelf: "center" },
   blob: { position: "absolute", borderRadius: 999 },
   avatar: { borderRadius: 999, alignItems: "center", justifyContent: "center" },
   heading: { fontFamily: fonts.heading, color: colors.ink },
   h1: { fontSize: 32, lineHeight: 38, letterSpacing: -0.6 },
+  h1Desktop: { fontSize: 44, lineHeight: 52, letterSpacing: -1 },
   h2: { fontSize: 22, lineHeight: 28, letterSpacing: -0.2 },
   h3: { fontSize: 18, lineHeight: 24 },
   keyword: { color: colors.cobalt },
@@ -338,7 +353,7 @@ const s = StyleSheet.create({
   primary: { backgroundColor: colors.cobalt },
   success: { backgroundColor: colors.sage },
   secondary: { backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.cobalt },
-  buttonText: { fontFamily: fonts.headingBold, fontSize: 16 },
+  buttonText: { fontFamily: fonts.headingBold, fontSize: 16, textAlign: "center", flexShrink: 1 },
   chip: { borderRadius: radius.chip, paddingHorizontal: 14, paddingVertical: 9, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
   chipSelected: { backgroundColor: colors.cobalt, borderColor: colors.cobalt },
   chipText: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.ink },
@@ -355,9 +370,9 @@ const s = StyleSheet.create({
     outlineWidth: 0,
   },
   card: { backgroundColor: colors.white, borderRadius: radius.card, borderWidth: 1, borderColor: colors.border, padding: space.card, boxShadow: shadow.card },
-  pill: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 6, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 5 },
+  pill: { maxWidth: "100%", alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 6, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 5 },
   pillDot: { width: 7, height: 7, borderRadius: 4 },
-  pillText: { fontFamily: fonts.bodySemi, fontSize: 13 },
+  pillText: { fontFamily: fonts.bodySemi, fontSize: 13, flexShrink: 1 },
   empty: { alignItems: "center", gap: space.md, paddingVertical: space.xl, paddingHorizontal: space.lg },
   illustration: { width: "100%", borderRadius: radius.card, overflow: "hidden", backgroundColor: colors.paper, boxShadow: shadow.card },
   illustrationImage: { position: "absolute", top: 0, left: 0, width: "100%", height: "100%" },

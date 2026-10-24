@@ -1,4 +1,4 @@
-import type { Anthropic } from "@anthropic-ai/sdk";
+import { dynamicTool, type ToolSet } from "ai";
 import { BriefSchema, type Brief, type ProjectStatus } from "@bc/shared";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
@@ -10,6 +10,8 @@ import { signedDownloadUrl } from "../lib/storage";
 import { addMessage, requireStatus, transition } from "../services/projects";
 import { terac } from "../terac/client";
 import { filtersFor } from "../terac/filters";
+import { assertPaymentCanFundWork } from "../services/demo-payments";
+import { ensureProjectTasks } from "../services/workspace";
 
 // Herramientas del agente (doc 03). Cada una declara en qué estados está
 // disponible y el servidor lo vuelve a comprobar al ejecutarla: el modelo
@@ -72,6 +74,11 @@ const saveBrief = defineTool({
   statuses: ["intake", "brief_ready"],
   input: z.object({ brief: BriefSchema, summary: z.string().min(1).describe("Resumen breve para el cliente, en su idioma") }),
   async run(ctx, { brief, summary }) {
+    if (ctx.project.brief_confirmed) throw new Error("El alcance ya fue aprobado. Conserva este proyecto; usa suggest_new_project para otro servicio y ask_client para aclaraciones del mismo encargo.");
+    // Refining a pre-payment plan rebuilds its tasks after the client's next confirmation.
+    if (JSON.stringify(ctx.project.brief) !== JSON.stringify(brief)) {
+      await db().delete(schema.projectTasks).where(eq(schema.projectTasks.project_id, ctx.project.id));
+    }
     await transition(ctx.project.id, ctx.project.status, "brief_ready", {
       brief,
       brief_confirmed: false,
@@ -134,6 +141,7 @@ const requestQuote = defineTool({
         status: "requested",
       });
     }
+    await ensureProjectTasks(ctx.project);
     await transition(ctx.project.id, "brief_ready", "quoting");
     return {
       status: "quoting",
@@ -173,6 +181,7 @@ async function requireSucceededPayment(projectId: string) {
     where: and(eq(schema.payments.project_id, projectId), eq(schema.payments.status, "succeeded")),
   });
   if (!paid) throw new Error("No hay un pago confirmado para este proyecto. No se puede contratar.");
+  assertPaymentCanFundWork(paid);
   return paid;
 }
 
@@ -188,7 +197,7 @@ async function opportunityBody(project: Project, feasibilityRequestId: string) {
   );
   const filters = filtersFor(brief);
   return {
-    project_id: required("TERAC_PROJECT_ID"),
+    project_id: env().TERAC_MODE === "replay" ? "replay_project" : required("TERAC_PROJECT_ID"),
     title: `Adaptación cultural: ${brief.business.sector} (${brief.source_language} → ${brief.target_language})`.slice(0, 200),
     internal_title: `bc_${project.id}`,
     description: [
@@ -216,6 +225,7 @@ async function opportunityBody(project: Project, feasibilityRequestId: string) {
         review_type: "manual_review" as const,
         title: "Entrega de la adaptación",
         instructions: [
+          "Desde el portal también puedes enviar mensajes al cliente, proponer o confirmar llamadas y compartir enlaces de Google Meet, Zoom o Teams. Reabre el portal para leer sus respuestas; BilingualCheck le avisará dentro de la app.",
           "Abre la página de entrega para ver el brief y enviar los textos adaptados con las notas culturales. Tras enviarlos, vuelve a Terac y marca la tarea como terminada. La aprobación y el pago requieren la decisión del cliente.",
           "Materiales del cliente (enlaces válidos 7 días):",
           links.join("\n") || "- (sin archivos; usa la descripción)",
@@ -293,6 +303,19 @@ const recommendFollowup = defineTool({
   },
 });
 
+const suggestNewProject = defineTool({
+  name: "suggest_new_project",
+  description: "Sugiere abrir otro proyecto cuando el cliente solicita un servicio diferente del alcance ya aprobado o cotizado (por ejemplo, cambiar una campaña de Meta por un website). No altera el proyecto actual, no crea proyectos, no contrata y no cobra. El cliente decide con un botón.",
+  statuses: ["brief_ready", "quoting", "quoted", "awaiting_payment", "paid", "recruiting", "in_progress", "in_review", "revision", "delivered"],
+  input: z.object({ goal: z.string().trim().min(1).max(8000).describe("Nueva necesidad en el idioma del cliente"),
+    reason: z.string().trim().min(1).max(2000).describe("Explica en el idioma del cliente por qué hacen falta otro proyecto, profesional y cotización") }),
+  async run(ctx, { goal, reason }) {
+    await addMessage({ projectId: ctx.project.id, userId: ctx.userId, role: "assistant", language: ctx.clientLanguage,
+      content: reason, card: { type: "new_project", goal, reason } });
+    return { suggested: true, current_project_unchanged: true };
+  },
+});
+
 export const TOOLS = [
   askClient,
   saveBrief,
@@ -301,17 +324,16 @@ export const TOOLS = [
   createOpportunity,
   launchOpportunity,
   recommendFollowup,
+  suggestNewProject,
 ] as const;
 
 const byName = new Map<string, ToolDef<z.ZodType>>(TOOLS.map((t) => [t.name, t as unknown as ToolDef<z.ZodType>]));
 
-/** Definiciones para la API de Claude, solo las disponibles en este estado. */
-export function toolsForStatus(status: ProjectStatus): Anthropic.Beta.BetaTool[] {
-  return TOOLS.filter((t) => t.statuses.includes(status)).map((t) => ({
-    name: t.name,
-    description: t.description,
-    input_schema: z.toJSONSchema(t.input) as Anthropic.Beta.BetaTool["input_schema"],
-  }));
+/** Solo se ofrecen las herramientas disponibles en el estado actual. */
+export function toolsForStatus(status: ProjectStatus): ToolSet {
+  return Object.fromEntries(TOOLS.filter((t) => t.statuses.includes(status)).map((t) => [
+    t.name, dynamicTool({ description: t.description, inputSchema: t.input }),
+  ]));
 }
 
 /**

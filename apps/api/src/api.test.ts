@@ -1,4 +1,5 @@
 import { createHmac } from "node:crypto";
+import { z } from "zod";
 import type { Brief } from "@bc/shared";
 import { describe, expect, it } from "vitest";
 import { toolsForStatus } from "./agent/tools";
@@ -49,15 +50,16 @@ describe("Terac en modo replay", () => {
 });
 
 describe("herramientas por estado", () => {
-  const names = (s: Parameters<typeof toolsForStatus>[0]) => toolsForStatus(s).map((t) => t.name);
+  const names = (s: Parameters<typeof toolsForStatus>[0]) => Object.keys(toolsForStatus(s));
   it("solo se puede contratar después de pagar", () => {
     expect(names("quoted")).not.toContain("create_opportunity");
     expect(names("awaiting_payment")).not.toContain("launch_opportunity");
     expect(names("paid")).toEqual(expect.arrayContaining(["create_opportunity", "launch_opportunity"]));
   });
-  it("genera JSON Schema para Claude", () => {
-    const brief = toolsForStatus("intake").find((t) => t.name === "save_brief");
-    expect(brief?.input_schema).toMatchObject({ type: "object" });
+  it("ofrece el esquema de brief validado para Gemini", () => {
+    const brief = toolsForStatus("intake").save_brief;
+    expect(brief).toBeDefined();
+    expect(z.toJSONSchema(brief!.inputSchema as z.ZodType)).toMatchObject({ type: "object" });
   });
 });
 

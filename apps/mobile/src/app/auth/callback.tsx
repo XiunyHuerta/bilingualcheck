@@ -1,7 +1,7 @@
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Platform } from "react-native";
+import { ActivityIndicator, Platform, ScrollView } from "react-native";
 import { Body, Button, Card, Screen } from "@/components/ui";
 import { api } from "@/lib/api";
 import { consumeWhopWebOAuth } from "@/lib/config";
@@ -35,7 +35,7 @@ export default function AuthCallback() {
       await signIn(session.session_jwt);
     })();
     void completion.current.then(() => {
-      if (active) router.replace("/(tabs)");
+      if (active) router.replace({ pathname: "/profile", params: { chooseLanguage: "1" } });
     }).catch(() => {
       if (active) setError(true);
     });
@@ -43,13 +43,15 @@ export default function AuthCallback() {
   }, [signIn]);
 
   return (
-    <Screen blobs style={{ alignItems: "center", justifyContent: "center", padding: space.xl }}>
+    <Screen blobs size="compact">
+      <ScrollView contentContainerStyle={{ flexGrow: 1, alignItems: "center", justifyContent: "center", padding: space.xl }}>
       {error ? (
         <Card tone="coral" style={{ padding: space.lg, gap: space.md }}>
           <Body>{t("signIn.error")}</Body>
           <Button label={t("signIn.button")} onPress={() => router.replace("/(auth)/sign-in")} />
         </Card>
       ) : <ActivityIndicator color={colors.cobalt} />}
+      </ScrollView>
     </Screen>
   );
 }

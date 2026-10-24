@@ -11,7 +11,7 @@ import { useSession } from "./session";
 let client: SupabaseClient | null = null;
 
 function supabase() {
-  if (!config.supabaseUrl || !config.supabaseAnonKey) return null;
+  if (!config.supabaseRealtimeEnabled || !config.supabaseUrl || !config.supabaseAnonKey) return null;
   client ??= createClient(config.supabaseUrl, config.supabaseAnonKey, {
     accessToken: async () => useSession.getState().token,
   });

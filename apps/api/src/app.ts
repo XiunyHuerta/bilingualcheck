@@ -7,13 +7,16 @@ import { configurationReport } from "./configuration";
 import { authRoutes } from "./routes/auth";
 import { cronRoutes } from "./routes/cron";
 import { projectRoutes } from "./routes/projects";
+import { collaborationRoutes } from "./routes/collaboration";
 import { professionalRoutes } from "./routes/professional";
 import { webhookRoutes } from "./routes/webhooks";
 import { checkoutAppReturnUrl } from "./whop/redirects";
+import { workspaceRoutes } from "./routes/workspace";
+import { localizationRoutes } from "./routes/localization";
 
 export const app = new Hono();
 
-app.use("*", logger());
+app.use("*", logger(message => console.log(message.replace(/\?[^\s]*/g, "?[redacted]"))));
 app.use("/v1/*", cors());
 // La versión web de la app consulta /health desde otro dominio (etiqueta "Concept demo").
 app.use("/health", cors());
@@ -28,8 +31,11 @@ app.get("/health", (c) =>
   c.json({ ok: true, service: "bilingualcheck-api", terac_mode: process.env.TERAC_MODE ?? "replay", configuration: configurationReport(), time: new Date().toISOString() }),
 );
 
+app.route("/v1", localizationRoutes);
 app.route("/v1", authRoutes);
 app.route("/v1", projectRoutes);
+app.route("/v1", collaborationRoutes);
+app.route("/v1", workspaceRoutes);
 app.route("/", webhookRoutes);
 app.route("/", professionalRoutes);
 app.route("/", cronRoutes);

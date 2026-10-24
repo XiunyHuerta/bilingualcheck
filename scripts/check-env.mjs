@@ -27,9 +27,9 @@ export const VARIABLES = {
     variable("STORAGE_BUCKET_DELIVERABLES", "core", { default: "deliverables" }),
     variable("FEE_RATE", "core", { default: "0.25", validate: (v) => Number.isFinite(Number(v)) && Number(v) >= 0 && Number(v) <= 1 }),
     variable("BUDGET_CAP_USD", "core", { default: "300", validate: positive }),
-    variable("ANTHROPIC_API_KEY", "ai", { required: true }),
-    variable("AGENT_MODEL", "ai", { default: "claude-sonnet-5-5" }),
-    variable("REVIEW_MODEL", "ai", { default: "claude-opus-5-5" }),
+    variable("GEMINI_API_KEY", "ai", { required: true }),
+    variable("AGENT_MODEL", "ai", { default: "gemini-3.6-flash" }),
+    variable("REVIEW_MODEL", "ai", { default: "gemini-3.6-flash" }),
     variable("AGENT_MAX_TOOL_CALLS", "ai", { default: "8", validate: (v) => positive(v) && Number.isInteger(Number(v)) }),
     variable("TERAC_MODE", "terac", { default: "replay", validate: choice("live", "replay") }),
     variable("TERAC_BASE_URL", "terac", { default: "https://terac.com/api/external/v2", validate: httpUrl }),
@@ -46,6 +46,7 @@ export const VARIABLES = {
     variable("WHOP_ACCOUNT_ID", "whop-payments", { required: true, validate: (v) => /^biz_[A-Za-z0-9]+$/.test(v) }),
     variable("WHOP_PRODUCT_ID", "whop-payments", { required: true, validate: (v) => /^prod_[A-Za-z0-9]+$/.test(v) }),
     variable("WHOP_WEBHOOK_SECRET", "whop-payments", { required: true }),
+    variable("DEMO_PAYMENTS_ENABLED", "whop-payments", { default: "false", validate: choice("true", "false") }),
   ],
   mobile: [
     variable("EXPO_PUBLIC_API_URL", "core", { default: "http://localhost:8787", validate: httpUrl }),
@@ -96,7 +97,7 @@ export const HELP = `Uso: pnpm env:check [--group core,terac|ai|whop-oauth|whop-
 Grupos predeterminados: core y terac. Solo los grupos seleccionados afectan la salida.
 Se informa también la preparación de las integraciones opcionales.
 core: sesión + base de datos + storage (API y app).
-ai: ANTHROPIC_API_KEY; whop-oauth: client IDs; whop-payments: API, cuenta, producto, webhook.
+ai: GEMINI_API_KEY; whop-oauth: client IDs; whop-payments: API, cuenta, producto, webhook.
 terac: replay sin claves; live requiere API key + project ID. Webhook/cron opcionales.
 WHOP_CLIENT_SECRET y TERAC_DEMO_FEASIBILITY_REQUEST_ID siempre opcionales.
 Precedencia: process.env > apps/<app>/.env.local > apps/<app>/.env.

@@ -4,13 +4,14 @@ import { router } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Platform, StyleSheet, View } from "react-native";
+import { Platform, ScrollView, StyleSheet, View } from "react-native";
 import { Reveal } from "@/components/motion";
 import { Body, Button, Card, Heading, Illustration, Logo, Screen } from "@/components/ui";
 import { post, type User } from "@/lib/api";
 import { config, startWhopWebOAuth, whopNativeOAuthRedirectUri, whopNativeReturnUri } from "@/lib/config";
 import { useSession } from "@/lib/session";
 import { space } from "@/theme/tokens";
+import { useResponsive } from "@/theme/responsive";
 
 // Sign in with Whop: OAuth 2.1 + PKCE (doc 05). El código se intercambia en el
 // backend, que devuelve nuestra propia sesión. Probar en un development build:
@@ -22,6 +23,7 @@ const discovery = {
 
 export default function SignIn() {
   const { t } = useTranslation();
+  const { isDesktop, gutter } = useResponsive();
   const signIn = useSession((s) => s.signIn);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -62,7 +64,7 @@ export default function SignIn() {
         redirect_uri: redirectUri,
       });
       await signIn(session.session_jwt);
-      router.replace("/(tabs)");
+      router.replace({ pathname: "/profile", params: { chooseLanguage: "1" } });
     } catch {
       setError(true);
     } finally {
@@ -72,41 +74,54 @@ export default function SignIn() {
 
   return (
     <Screen blobs>
-      <View style={s.content}>
+      <ScrollView contentContainerStyle={[s.content, { padding: gutter }, isDesktop && s.desktopContent]}>
         <Reveal>
           <Logo variant="horizontal" height={30} />
         </Reveal>
 
-        <Reveal delay={100} style={{ marginTop: space.xxl, gap: space.md }}>
-          <Illustration height={150} />
-          <Heading>{t("signIn.title")}</Heading>
-          <Body muted>{t("signIn.body")}</Body>
-        </Reveal>
+        <View style={[s.panels, isDesktop && s.desktopPanels]}>
+          {isDesktop && <View style={s.visual}><Illustration /></View>}
+          <View style={[s.form, isDesktop && s.desktopForm]}>
+            <Reveal delay={100} style={{ marginTop: space.xxl, gap: space.md }}>
+              {!isDesktop && <Illustration height={150} />}
+              <Heading>{t("signIn.title")}</Heading>
+          <Body muted>{t("v2.whopExplanation")}</Body>
+            </Reveal>
 
-        <View style={{ flex: 1 }} />
+            <View style={{ flex: 1 }} />
 
-        <Reveal delay={200} style={{ gap: space.md }}>
-          {error && (
-            <Card tone="coral" style={{ padding: space.lg }}>
-              <Body small>{t("signIn.error")}</Body>
-            </Card>
-          )}
-          {!config.whopClientId && (
-            <Card tone="gold" style={{ padding: space.lg }}>
-              <Body small>{t("signIn.notConfigured")}</Body>
-            </Card>
-          )}
-          <Button
-            label={t("signIn.button")}
-            disabled={!request || !config.whopClientId}
-            loading={loading}
-            onPress={() => void authorize()}
-          />
-          <Button label={t("common.back")} variant="ghost" onPress={() => router.back()} />
-        </Reveal>
-      </View>
+            <Reveal delay={200} style={{ gap: space.md }}>
+              {error && (
+                <Card tone="coral" style={{ padding: space.lg }}>
+                  <Body small>{t("signIn.error")}</Body>
+                </Card>
+              )}
+              {!config.whopClientId && (
+                <Card tone="gold" style={{ padding: space.lg }}>
+                  <Body small>{t("signIn.notConfigured")}</Body>
+                </Card>
+              )}
+              <Button
+                label={t("signIn.button")}
+                disabled={!request || !config.whopClientId}
+                loading={loading}
+                onPress={() => void authorize()}
+              />
+              <Button label={t("common.back")} variant="ghost" onPress={() => router.back()} />
+            </Reveal>
+          </View>
+        </View>
+      </ScrollView>
     </Screen>
   );
 }
 
-const s = StyleSheet.create({ content: { flex: 1, padding: space.xl } });
+const s = StyleSheet.create({
+  content: { flexGrow: 1, padding: space.xl },
+  desktopContent: { justifyContent: "center", paddingVertical: 48 },
+  panels: { flex: 1 },
+  desktopPanels: { flexDirection: "row", alignItems: "center", gap: 64 },
+  visual: { flex: 1, minWidth: 0 },
+  form: { flex: 1, gap: space.xl },
+  desktopForm: { maxWidth: 480, minWidth: 0 },
+});
