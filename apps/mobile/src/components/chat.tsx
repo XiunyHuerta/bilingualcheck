@@ -40,7 +40,7 @@ export function EventNote({ children }: { children: string }) {
   return <Text style={s.event}>{children}</Text>;
 }
 
-export function Composer(props: {
+export function Composer({ inputRef, ...props }: {
   value: string;
   onChange: (v: string) => void;
   onSend: () => void;
@@ -66,7 +66,7 @@ export function Composer(props: {
           <Text style={s.plus}>+</Text>
         </Pressable>
         <Field
-          ref={props.inputRef}
+          ref={inputRef}
           value={props.value}
           onChangeText={props.onChange}
           placeholder={t("chat.placeholder")}

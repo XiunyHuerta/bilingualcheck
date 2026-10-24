@@ -1,5 +1,7 @@
 # 03 · Agente de IA
 
+Estado de implementación (2026-10-24): la revisión de la entrega se ejecuta en `services/submissions.ts`, fuera de la elección libre de herramientas del agente. Solo llama a `agent/review.ts` con contenido recibido, verifica la versión y publica la tarjeta en una transacción. La decisión de pago sigue siendo del cliente. Ver [doc 10](10-entregas-y-validacion.md).
+
 ## Rol
 
 El agente es un **project manager multilingüe**: entiende al negocio, traduce su necesidad en un brief accionable para un profesional, contrata vía Terac, revisa lo que llega y lo explica al cliente en su idioma. **No hace el trabajo cultural él mismo**: lo hacen las personas contratadas.

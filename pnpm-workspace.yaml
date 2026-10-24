@@ -3,6 +3,7 @@ packages:
   - packages/*
 allowBuilds:
   esbuild: true
+  unrs-resolver: false
 minimumReleaseAgeExclude:
   - '@anthropic-ai/sdk@1.3.0'
   - '@expo/cli@58.1.15'

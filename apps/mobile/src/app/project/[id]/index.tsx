@@ -27,7 +27,8 @@ export default function ProjectChat() {
   const input = useRef<ComponentRef<typeof TextInput>>(null);
 
   useProjectRealtime(id);
-  const poll = realtimeEnabled() ? false : 3_000;
+  // También sondear con Realtime configurado: la conexión puede perderse o rechazar el JWT.
+  const poll = realtimeEnabled() ? 15_000 : 3_000;
 
   const detail = useQuery({
     queryKey: ["project", id],
@@ -70,7 +71,13 @@ export default function ProjectChat() {
 
   const pay = useMutation({
     mutationFn: async () => {
-      const { purchase_url } = await post<{ purchase_url: string }>(`/v1/projects/${id}/quote/accept`);
+      const { purchase_url } = await post<{ purchase_url: string }>(`/v1/projects/${id}/quote/accept`, {
+        platform: Platform.OS === "web" ? "web" : "native",
+      });
+      if (Platform.OS === "web") {
+        window.location.assign(purchase_url);
+        return;
+      }
       await WebBrowser.openAuthSessionAsync(purchase_url, Linking.createURL("checkout/return"));
       router.push({ pathname: "/checkout/return", params: { project_id: id } });
     },

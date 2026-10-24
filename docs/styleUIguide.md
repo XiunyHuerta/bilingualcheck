@@ -36,7 +36,7 @@ Reglas:
 - Los estados siempre combinan tinte suave y texto oscuro del mismo color (p. ej. fondo sage-soft con texto sage).
 - Un color por significado: coral = humano / revisión, sage = hecho, sky = agente. No mezclar.
 
-> ⚠️ `docs/06-app-expo.md` define `ink` como `#1E2A3A`, pero el brand kit usa `#202835`. Conviene unificar en `#202835`.
+`ink` está unificado en `#202835` en los tokens de la app y en el doc 06.
 
 ## 2. Tipografía
 

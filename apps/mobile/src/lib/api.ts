@@ -66,6 +66,11 @@ export type Submission = {
   ai_review: SubmissionReview | null;
   client_decision: "approved" | "changes_requested" | null;
   client_feedback: string | null;
+  delivery_text?: string | null;
+  delivery_asset_id?: string | null;
+  content_version?: number;
+  reviewed_version?: number;
+  review_error?: string | null;
 };
 
 export type ProjectDetail = { project: Project; quote: Quote | null; submissions: Submission[] };

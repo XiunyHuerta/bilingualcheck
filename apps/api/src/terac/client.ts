@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { env, required } from "../env";
+import { teracApiKey, teracEnv } from "../env";
 import { ApiError } from "../lib/errors";
 import { replay } from "./replay";
 import {
@@ -8,6 +8,9 @@ import {
   FeasibilityRequest,
   Filter,
   Opportunity,
+  OrganizationContext,
+  Project,
+  ProjectPage,
   Submission,
 } from "./types";
 
@@ -17,12 +20,12 @@ import {
 const MAX_ATTEMPTS = 3;
 
 async function call<T>(method: string, path: string, schema: z.ZodType<T>, body?: unknown): Promise<T> {
-  const url = `${env().TERAC_BASE_URL}${path}`;
+  const url = `${teracEnv().TERAC_BASE_URL}${path}`;
   for (let attempt = 1; ; attempt++) {
     const res = await fetch(url, {
       method,
       headers: {
-        Authorization: `Bearer ${required("TERAC_API_KEY")}`,
+        Authorization: `Bearer ${teracApiKey()}`,
         "Content-Type": "application/json",
         Accept: "application/json",
       },
@@ -54,16 +57,42 @@ async function call<T>(method: string, path: string, schema: z.ZodType<T>, body?
   }
 }
 
-const isReplay = () => env().TERAC_MODE === "replay";
+const isReplay = () => teracEnv().TERAC_MODE === "replay";
 const listOf = <T extends z.ZodType>(item: T) =>
   z.union([z.array(item), z.object({ data: z.array(item) }).loose().transform((r) => r.data)]);
 const anyJson = z.unknown();
 
 export const terac = {
+  /** Quién es la organización de la API key: nombre, saldo y enlaces del panel. */
+  async organizationContext() {
+    return call("GET", "/organizations/current/context", OrganizationContext);
+  },
+
+  async getProject(id: string): Promise<Project> {
+    return call("GET", `/projects/${encodeURIComponent(id)}`, Project);
+  },
+
+  async findProjectByName(name: string): Promise<Project | undefined> {
+    let cursor: string | null = null;
+    do {
+      const query: string = `?limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
+      const page: ProjectPage = await call("GET", `/projects${query}`, ProjectPage);
+      const hit = page.data.find((p) => p.name === name);
+      if (hit) return hit;
+      cursor = page.pagination.has_more ? page.pagination.next_cursor : null;
+    } while (cursor);
+    return undefined;
+  },
+
+  /** Cada llamada crea un proyecto nuevo aunque el nombre exista: buscar antes con `findProjectByName`. */
+  async createProject(name: string): Promise<Project> {
+    return call("POST", "/projects", Project, { name });
+  },
+
   async requestFeasibility(body: FeasibilityBody): Promise<FeasibilityRequest> {
     if (isReplay()) return replay.requestFeasibility(body);
     // Demo: reutilizar una cotización real ya respondida (doc 04 · Modo demo).
-    const demoId = env().TERAC_DEMO_FEASIBILITY_REQUEST_ID;
+    const demoId = teracEnv().TERAC_DEMO_FEASIBILITY_REQUEST_ID;
     if (demoId) return this.getFeasibility(demoId);
     return call("POST", "/feasibility/requests", FeasibilityRequest, body);
   },

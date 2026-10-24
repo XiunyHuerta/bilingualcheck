@@ -12,9 +12,13 @@
     "test": "pnpm -r test",
     "db:generate": "pnpm --filter @bc/api db:generate",
     "db:migrate": "pnpm --filter @bc/api db:migrate",
+    "terac:setup": "pnpm --filter @bc/api terac:setup",
     "terac:filters": "pnpm --filter @bc/api terac:filters",
     "terac:webhooks": "pnpm --filter @bc/api terac:webhooks",
-    "env:check": "node scripts/check-env.mjs"
+    "env:check": "node scripts/check-env.mjs",
+    "demo:seed": "pnpm --filter @bc/api demo:seed",
+    "env:plan": "node scripts/sync-vercel-env.mjs --project bilingualcheck-api --team xiu17 --dry-run",
+    "test:env": "node --test scripts/env.test.mjs"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",

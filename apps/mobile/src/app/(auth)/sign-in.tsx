@@ -2,17 +2,15 @@ import * as AuthSession from "expo-auth-session";
 import * as Crypto from "expo-crypto";
 import { router } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { StyleSheet, View } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import { Reveal } from "@/components/motion";
 import { Body, Button, Card, Heading, Illustration, Logo, Screen } from "@/components/ui";
 import { post, type User } from "@/lib/api";
-import { config } from "@/lib/config";
+import { config, startWhopWebOAuth, whopNativeOAuthRedirectUri, whopNativeReturnUri } from "@/lib/config";
 import { useSession } from "@/lib/session";
 import { space } from "@/theme/tokens";
-
-WebBrowser.maybeCompleteAuthSession();
 
 // Sign in with Whop: OAuth 2.1 + PKCE (doc 05). El código se intercambia en el
 // backend, que devuelve nuestra propia sesión. Probar en un development build:
@@ -27,10 +25,12 @@ export default function SignIn() {
   const signIn = useSession((s) => s.signIn);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
-  const nonce = useMemo(() => Crypto.randomUUID(), []);
-  const redirectUri = AuthSession.makeRedirectUri({ scheme: "bilingualcheck", path: "auth/callback" });
+  const [nonce] = useState(() => Crypto.randomUUID());
+  const redirectUri = Platform.OS === "web"
+    ? AuthSession.makeRedirectUri({ path: "auth/callback" })
+    : whopNativeOAuthRedirectUri();
 
-  const [request, response, promptAsync] = AuthSession.useAuthRequest(
+  const [request] = AuthSession.useAuthRequest(
     {
       clientId: config.whopClientId,
       redirectUri,
@@ -41,21 +41,34 @@ export default function SignIn() {
     discovery,
   );
 
-  useEffect(() => {
-    if (response?.type !== "success" || !request?.codeVerifier) {
-      if (response && response.type !== "success") setLoading(false);
-      if (response?.type === "error") setError(true);
-      return;
+  async function authorize() {
+    if (!request || loading) return;
+    setError(false);
+    setLoading(true);
+    try {
+      if (Platform.OS === "web") {
+        startWhopWebOAuth(request);
+        return;
+      }
+      if (!request.url || !request.codeVerifier) throw new Error("OAuth no está listo");
+      // El callback registrado en Whop es HTTPS; el puente devuelve a este esquema.
+      const result = await WebBrowser.openAuthSessionAsync(request.url, whopNativeReturnUri);
+      if (result.type !== "success") return;
+      const response = request.parseReturnUrl(result.url);
+      if (response.type !== "success" || !response.params.code) throw new Error("OAuth rechazado");
+      const session = await post<{ session_jwt: string; user: User }>("/v1/auth/whop", {
+        code: response.params.code,
+        code_verifier: request.codeVerifier,
+        redirect_uri: redirectUri,
+      });
+      await signIn(session.session_jwt);
+      router.replace("/(tabs)");
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
     }
-    post<{ session_jwt: string; user: User }>("/v1/auth/whop", {
-      code: response.params.code,
-      code_verifier: request.codeVerifier,
-      redirect_uri: redirectUri,
-    })
-      .then((r) => signIn(r.session_jwt))
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
-  }, [response, request, redirectUri, signIn]);
+  }
 
   return (
     <Screen blobs>
@@ -87,11 +100,7 @@ export default function SignIn() {
             label={t("signIn.button")}
             disabled={!request || !config.whopClientId}
             loading={loading}
-            onPress={() => {
-              setError(false);
-              setLoading(true);
-              void promptAsync();
-            }}
+            onPress={() => void authorize()}
           />
           <Button label={t("common.back")} variant="ghost" onPress={() => router.back()} />
         </Reveal>

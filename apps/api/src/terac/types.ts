@@ -105,3 +105,25 @@ export type CreateOpportunityBody = {
 };
 
 export const Filter = z.object({ slug: z.string() }).loose();
+
+export const Project = z.object({ id: z.string(), name: z.string(), slug: z.string(), dashboard_url: z.string() }).loose();
+export type Project = z.infer<typeof Project>;
+
+export const ProjectPage = z
+  .object({
+    data: z.array(Project),
+    pagination: z.object({ next_cursor: z.string().nullable(), has_more: z.boolean() }).loose(),
+  })
+  .loose();
+export type ProjectPage = z.infer<typeof ProjectPage>;
+
+// GET /organizations/current/context: quién es la organización de la API key.
+export const OrganizationContext = z
+  .object({
+    organizationId: z.string(),
+    organizationName: z.string(),
+    balanceDollars: z.number(),
+    dashboard: z.object({ api_keys: z.string(), finance: z.string() }).loose(),
+  })
+  .loose();
+export type OrganizationContext = z.infer<typeof OrganizationContext>;

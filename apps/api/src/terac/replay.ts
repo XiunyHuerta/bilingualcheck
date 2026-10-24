@@ -57,7 +57,7 @@ export const replay = {
   getSubmission(id: string): Submission {
     return {
       id,
-      opportunity_id: `${PREFIX}opp`,
+      opportunity_id: id.startsWith("replay_sub_") ? id.slice("replay_sub_".length) : `${PREFIX}opp`,
       status: "awaiting_review",
       participant_name: "Alex R.",
       participant_background: {

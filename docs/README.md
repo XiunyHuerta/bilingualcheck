@@ -16,6 +16,8 @@ BilingualCheck es un agente de IA para negocios que dominan un idioma y quieren 
 | 06 | [App móvil Expo](06-app-expo.md) | Pantallas, navegación, estado, librerías, i18n, sistema de diseño |
 | 07 | [Modelo de datos y API](07-datos-y-api.md) | Tablas, endpoints propios, contratos |
 | 08 | [Plan de trabajo del hackathon](08-plan-hackathon.md) | Fases, tareas, reparto, guion de la demo, riesgos |
+| 09 | [Despliegue en Vercel y variables](09-despliegue-y-variables.md) | Proyectos de Vercel, variables que faltan (quién las pone) y configuración de Whop sandbox |
+| 10 | [Entregas y validación](10-entregas-y-validacion.md) | Portal del profesional, migración, revisión, correcciones, recuperación y bloqueos reales |
 
 ## Decisiones clave (resumen)
 
