@@ -1,0 +1,24 @@
+{
+  "name": "bilingualcheck",
+  "private": true,
+  "packageManager": "pnpm@12.15.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev:api": "pnpm --filter @bc/api dev",
+    "dev:mobile": "pnpm --filter @bc/mobile start",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "db:generate": "pnpm --filter @bc/api db:generate",
+    "db:migrate": "pnpm --filter @bc/api db:migrate",
+    "terac:filters": "pnpm --filter @bc/api terac:filters",
+    "terac:webhooks": "pnpm --filter @bc/api terac:webhooks",
+    "env:check": "node scripts/check-env.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "~5.9.3",
+    "vitest": "^5.0.5"
+  }
+}

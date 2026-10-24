@@ -1,0 +1,71 @@
+{
+  "tagline": "Your business deserves to be understood.",
+  "welcome": {
+    "title": "Reach the community that speaks another language",
+    "body": "Tell us your goal in your own language. Our agent hires real professionals who know your audience's culture and coordinates the work until delivery.",
+    "cta": "Get started"
+  },
+  "signIn": {
+    "title": "Sign in",
+    "button": "Continue with Whop",
+    "error": "We couldn't sign you in. Please try again."
+  },
+  "projects": {
+    "title": "Projects",
+    "empty": "You don't have any projects yet. Create your first one and tell the agent what you need.",
+    "new": "New project"
+  },
+  "newProject": {
+    "title": "New project",
+    "sourceLanguage": "Which language do you want to chat in?",
+    "search": "Search language",
+    "create": "Create and open chat"
+  },
+  "chat": {
+    "placeholder": "Type your message…",
+    "send": "Send",
+    "attach": "Attach",
+    "typing": "The agent is typing…",
+    "agentError": "The agent ran into a problem. Please try again in a moment.",
+    "uploading": "Uploading file…"
+  },
+  "card": {
+    "briefTitle": "Project brief",
+    "goal": "Goal",
+    "market": "Market",
+    "audience": "Audience",
+    "deliverables": "Deliverables",
+    "confirm": "Confirm",
+    "correct": "Change something",
+    "correctHint": "Tell us what you want to change in the brief.",
+    "quoteTitle": "Quote",
+    "eta": "Estimated time: {{days}} days",
+    "includes": "Includes",
+    "pay": "Pay with Whop",
+    "recommendation": "Recommendation"
+  },
+  "status": {
+    "intake": "Chatting",
+    "brief_ready": "Brief ready",
+    "quoting": "Getting a quote",
+    "quoted": "Quote ready",
+    "awaiting_payment": "Awaiting payment",
+    "paid": "Paid",
+    "recruiting": "Finding a professional",
+    "in_progress": "In progress",
+    "in_review": "Delivery to review",
+    "revision": "Being revised",
+    "delivered": "Delivered",
+    "failed": "No professionals available",
+    "refunded": "Refunded"
+  },
+  "profile": {
+    "title": "Profile",
+    "uiLanguage": "App language",
+    "signOut": "Sign out"
+  },
+  "checkout": {
+    "confirming": "Confirming your payment…",
+    "back": "Back to project"
+  }
+}

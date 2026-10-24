@@ -1,0 +1,71 @@
+{
+  "tagline": "Seu negócio merece ser entendido.",
+  "welcome": {
+    "title": "Alcance a comunidade que fala outro idioma",
+    "body": "Conte sua meta no seu idioma. Nosso agente contrata profissionais reais que conhecem a cultura do seu público e coordena o trabalho até a entrega.",
+    "cta": "Começar"
+  },
+  "signIn": {
+    "title": "Entrar",
+    "button": "Continuar com Whop",
+    "error": "Não foi possível entrar. Tente novamente."
+  },
+  "projects": {
+    "title": "Projetos",
+    "empty": "Você ainda não tem projetos. Crie o primeiro e conte ao agente do que precisa.",
+    "new": "Novo projeto"
+  },
+  "newProject": {
+    "title": "Novo projeto",
+    "sourceLanguage": "Em qual idioma você quer conversar?",
+    "search": "Buscar idioma",
+    "create": "Criar e abrir o chat"
+  },
+  "chat": {
+    "placeholder": "Escreva sua mensagem…",
+    "send": "Enviar",
+    "attach": "Anexar",
+    "typing": "O agente está digitando…",
+    "agentError": "O agente teve um problema. Tente novamente em instantes.",
+    "uploading": "Enviando arquivo…"
+  },
+  "card": {
+    "briefTitle": "Briefing do projeto",
+    "goal": "Objetivo",
+    "market": "Mercado",
+    "audience": "Público",
+    "deliverables": "Entregas",
+    "confirm": "Confirmar",
+    "correct": "Corrigir algo",
+    "correctHint": "Escreva o que você quer mudar no briefing.",
+    "quoteTitle": "Orçamento",
+    "eta": "Prazo estimado: {{days}} dias",
+    "includes": "Inclui",
+    "pay": "Pagar com Whop",
+    "recommendation": "Recomendação"
+  },
+  "status": {
+    "intake": "Conversando",
+    "brief_ready": "Briefing pronto",
+    "quoting": "Orçando",
+    "quoted": "Orçamento pronto",
+    "awaiting_payment": "Aguardando pagamento",
+    "paid": "Pago",
+    "recruiting": "Buscando profissional",
+    "in_progress": "Em andamento",
+    "in_review": "Entrega para revisar",
+    "revision": "Em correção",
+    "delivered": "Entregue",
+    "failed": "Sem profissionais disponíveis",
+    "refunded": "Reembolsado"
+  },
+  "profile": {
+    "title": "Perfil",
+    "uiLanguage": "Idioma do app",
+    "signOut": "Sair"
+  },
+  "checkout": {
+    "confirming": "Confirmando seu pagamento…",
+    "back": "Voltar ao projeto"
+  }
+}

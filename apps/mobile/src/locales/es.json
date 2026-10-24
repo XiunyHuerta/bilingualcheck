@@ -1,0 +1,71 @@
+{
+  "tagline": "Tu negocio merece ser entendido.",
+  "welcome": {
+    "title": "Llega a la comunidad que habla otro idioma",
+    "body": "Cuéntanos tu meta en tu idioma. Nuestro agente contrata profesionales reales que conocen la cultura de tu público y coordina el trabajo hasta la entrega.",
+    "cta": "Empezar"
+  },
+  "signIn": {
+    "title": "Inicia sesión",
+    "button": "Continuar con Whop",
+    "error": "No pudimos iniciar sesión. Inténtalo de nuevo."
+  },
+  "projects": {
+    "title": "Proyectos",
+    "empty": "Todavía no tienes proyectos. Crea el primero y cuéntale al agente qué necesitas.",
+    "new": "Nuevo proyecto"
+  },
+  "newProject": {
+    "title": "Nuevo proyecto",
+    "sourceLanguage": "¿En qué idioma quieres conversar?",
+    "search": "Buscar idioma",
+    "create": "Crear y abrir el chat"
+  },
+  "chat": {
+    "placeholder": "Escribe tu mensaje…",
+    "send": "Enviar",
+    "attach": "Adjuntar",
+    "typing": "El agente está escribiendo…",
+    "agentError": "El agente tuvo un problema. Vuelve a intentarlo en un momento.",
+    "uploading": "Subiendo archivo…"
+  },
+  "card": {
+    "briefTitle": "Brief del proyecto",
+    "goal": "Objetivo",
+    "market": "Mercado",
+    "audience": "Público",
+    "deliverables": "Entregables",
+    "confirm": "Confirmar",
+    "correct": "Corregir algo",
+    "correctHint": "Escribe qué quieres cambiar del brief.",
+    "quoteTitle": "Cotización",
+    "eta": "Plazo estimado: {{days}} días",
+    "includes": "Incluye",
+    "pay": "Pagar con Whop",
+    "recommendation": "Recomendación"
+  },
+  "status": {
+    "intake": "Conversando",
+    "brief_ready": "Brief listo",
+    "quoting": "Cotizando",
+    "quoted": "Cotización lista",
+    "awaiting_payment": "Esperando pago",
+    "paid": "Pagado",
+    "recruiting": "Buscando profesional",
+    "in_progress": "En curso",
+    "in_review": "Entrega para revisar",
+    "revision": "En corrección",
+    "delivered": "Entregado",
+    "failed": "Sin profesionales disponibles",
+    "refunded": "Reembolsado"
+  },
+  "profile": {
+    "title": "Perfil",
+    "uiLanguage": "Idioma de la interfaz",
+    "signOut": "Cerrar sesión"
+  },
+  "checkout": {
+    "confirming": "Confirmando tu pago…",
+    "back": "Volver al proyecto"
+  }
+}

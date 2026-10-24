@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.vercel/
+.expo/
+*.log
+.DS_Store
+# Variables de entorno: solo se versionan las plantillas
+.env
+.env.*
+!.env.example
+apps/mobile/ios/
+apps/mobile/android/
+*.tsbuildinfo
+
+.vercel
+.env*
