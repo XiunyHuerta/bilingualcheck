@@ -13,6 +13,12 @@ export const app = new Hono();
 app.use("*", logger());
 app.use("/v1/*", cors());
 
+// Quien abre la URL en el navegador ve qué es esto en vez de un 404 (la interfaz es la app Expo).
+app.get("/", (c) =>
+  c.json({ service: "bilingualcheck-api", message: "API de BilingualCheck. La interfaz es la app Expo.", health: "/health" }),
+);
+app.get("/favicon.ico", (c) => c.body(null, 204));
+
 app.get("/health", (c) =>
   c.json({ ok: true, service: "bilingualcheck-api", terac_mode: process.env.TERAC_MODE ?? "replay", time: new Date().toISOString() }),
 );
