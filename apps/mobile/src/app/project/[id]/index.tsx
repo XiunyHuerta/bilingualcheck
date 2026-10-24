@@ -5,13 +5,14 @@ import { router, Stack, useLocalSearchParams } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { type ComponentRef, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { MessageCard } from "@/components/cards";
-import { StatusPill } from "@/components/ui";
+import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from "react-native";
+import { type CardActions, DeliveryCard, MessageCard } from "@/components/cards";
+import { Bubble, Composer, EventNote, TypingBubble } from "@/components/chat";
+import { Stepper } from "@/components/stepper";
+import { Screen, StatusPill } from "@/components/ui";
 import { api, post, type ChatMessage, type ProjectDetail } from "@/lib/api";
 import { realtimeEnabled, useProjectRealtime } from "@/lib/realtime";
-import { colors, fonts, radius, space } from "@/theme/tokens";
+import { colors, space } from "@/theme/tokens";
 
 // Chat del proyecto (doc 06): mensajes del agente y del cliente + tarjetas.
 // Las respuestas del agente llegan por Realtime (o por sondeo si no está configurado).
@@ -97,7 +98,7 @@ export default function ProjectChat() {
     }
   }
 
-  const actions = {
+  const actions: CardActions = {
     canConfirmBrief: project?.status === "brief_ready" && !project.brief_confirmed,
     canPay: project?.status === "quoted",
     busy: confirmBrief.isPending || pay.isPending,
@@ -108,87 +109,78 @@ export default function ProjectChat() {
     },
     onPay: () => pay.mutate(),
     onQuickReply: (text: string) => send.mutate(text),
+    onOpenDelivery: (sid) => router.push({ pathname: "/project/[id]/delivery/[sid]", params: { id, sid } }),
   };
+  const inert: CardActions = { ...actions, canConfirmBrief: false, canPay: false, onQuickReply: () => undefined };
 
   // Solo la última tarjeta de cada tipo es accionable.
   const list = messages.data ?? [];
   const lastCardIdx = new Map(list.flatMap((m, i) => (m.card ? [[m.card.type, i] as const] : [])));
 
+  // Si el agente aún no publicó la tarjeta de entrega, se arma con los datos del servidor.
+  const waiting = detail.data?.submissions.findLast((sub) => !sub.client_decision);
+  const syntheticDelivery = project?.status === "in_review" && !lastCardIdx.has("delivery") ? waiting : undefined;
+  const typing = Boolean(project?.agent_busy) || send.isPending || (list.length === 0 && messages.isFetched && project?.status === "intake");
+
   return (
-    <SafeAreaView edges={["bottom"]} style={{ flex: 1 }}>
+    <Screen edges={["bottom"]}>
       <Stack.Screen
         options={{
-          title: project?.brief?.business.name ?? "",
-          headerRight: () => (project ? <StatusPill status={project.status} /> : null),
+          title: project?.brief?.business.name ?? t("projects.untitled"),
+          headerRight: () => (project ? <View style={{ marginRight: space.lg }}><StatusPill status={project.status} /></View> : null),
         }}
       />
+      {project && (
+        <Stepper status={project.status} onPress={() => router.push({ pathname: "/project/[id]/timeline", params: { id } })} />
+      )}
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={90}>
         <FlatList
           data={list}
           keyExtractor={(m) => m.id}
-          contentContainerStyle={{ padding: space.lg, gap: space.md }}
+          contentContainerStyle={s.list}
           renderItem={({ item, index }) => {
             if (item.role === "system_event") {
-              return item.content === "agent_error" ? <Text style={s.event}>{t("chat.agentError")}</Text> : null;
+              return item.content === "agent_error" ? <EventNote>{t("chat.agentError")}</EventNote> : null;
             }
             const mine = item.role === "user";
             const live = item.card && lastCardIdx.get(item.card.type) === index;
             return (
-              <View style={{ alignItems: mine ? "flex-end" : "flex-start" }}>
-                <View style={[s.bubble, mine ? s.mine : s.agent, item.pending && { opacity: 0.6 }]}>
-                  <Text style={s.text}>{item.content}</Text>
-                </View>
+              <View>
+                <Bubble mine={mine} text={item.content} pending={item.pending} showAvatar={index === 0 || list[index - 1]?.role === "user"} />
                 {item.card && (
-                  <View style={{ alignSelf: "stretch" }}>
-                    <MessageCard
-                      card={item.card}
-                      actions={live ? actions : { ...actions, canConfirmBrief: false, canPay: false, onQuickReply: () => undefined }}
-                    />
+                  <View style={s.cardSlot}>
+                    <MessageCard card={item.card} actions={live ? actions : inert} />
                   </View>
                 )}
               </View>
             );
           }}
-          ListFooterComponent={project?.agent_busy || send.isPending ? <Text style={s.event}>{t("chat.typing")}</Text> : undefined}
+          ListFooterComponent={
+            <View style={{ gap: space.md }}>
+              {syntheticDelivery && (
+                <View style={s.cardSlot}>
+                  <DeliveryCard submissionId={syntheticDelivery.id} review={syntheticDelivery.ai_review} onOpen={actions.onOpenDelivery} />
+                </View>
+              )}
+              {typing && <TypingBubble />}
+            </View>
+          }
         />
-        {(pendingAssets.length > 0 || uploading) && (
-          <Text style={s.attachments}>{uploading ? t("chat.uploading") : pendingAssets.map((a) => `📎 ${a.name}`).join("  ")}</Text>
-        )}
-        <View style={s.composer}>
-          <Pressable onPress={attach} style={s.attach} accessibilityLabel={t("chat.attach")} accessibilityRole="button">
-            <Text style={{ fontSize: 22, color: colors.blueDeep }}>＋</Text>
-          </Pressable>
-          <TextInput
-            ref={input}
-            value={draft}
-            onChangeText={setDraft}
-            placeholder={t("chat.placeholder")}
-            multiline
-            style={s.input}
-          />
-          <Pressable
-            onPress={() => draft.trim() && send.mutate(draft.trim())}
-            style={[s.send, !draft.trim() && { opacity: 0.5 }]}
-            accessibilityRole="button"
-          >
-            <Text style={s.sendText}>{t("chat.send")}</Text>
-          </Pressable>
-        </View>
+        <Composer
+          value={draft}
+          onChange={setDraft}
+          onSend={() => send.mutate(draft.trim())}
+          onAttach={() => void attach()}
+          attachments={pendingAssets.map((a) => a.name)}
+          uploading={uploading}
+          inputRef={input}
+        />
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
 const s = StyleSheet.create({
-  bubble: { maxWidth: "85%", borderRadius: radius.lg, paddingHorizontal: space.lg, paddingVertical: space.md },
-  agent: { backgroundColor: colors.blueSoft, borderBottomLeftRadius: radius.sm },
-  mine: { backgroundColor: colors.white, borderBottomRightRadius: radius.sm },
-  text: { fontFamily: fonts.body, fontSize: 16, color: colors.ink, lineHeight: 22 },
-  event: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, textAlign: "center", marginTop: space.sm },
-  attachments: { paddingHorizontal: space.lg, fontFamily: fonts.body, color: colors.muted },
-  composer: { flexDirection: "row", alignItems: "flex-end", gap: space.sm, padding: space.md, borderTopWidth: 1, borderTopColor: colors.border },
-  attach: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
-  input: { flex: 1, backgroundColor: colors.white, borderRadius: radius.md, paddingHorizontal: space.md, paddingVertical: space.sm, fontFamily: fonts.body, fontSize: 16, maxHeight: 120 },
-  send: { backgroundColor: colors.blueDeep, borderRadius: radius.pill, paddingHorizontal: space.lg, paddingVertical: space.sm + 2 },
-  sendText: { color: colors.white, fontFamily: fonts.bodyMedium },
+  list: { padding: space.lg, gap: space.md, backgroundColor: colors.cream },
+  cardSlot: { alignSelf: "stretch", marginLeft: 38 },
 });

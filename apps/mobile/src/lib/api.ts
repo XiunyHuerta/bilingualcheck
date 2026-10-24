@@ -64,6 +64,8 @@ export type Submission = {
   status: string;
   participant_summary: { name: string | null; experience: string[] } | null;
   ai_review: SubmissionReview | null;
+  client_decision: "approved" | "changes_requested" | null;
+  client_feedback: string | null;
 };
 
 export type ProjectDetail = { project: Project; quote: Quote | null; submissions: Submission[] };

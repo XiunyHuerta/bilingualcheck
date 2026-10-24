@@ -1,46 +1,55 @@
+import { languageName } from "@bc/shared";
 import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { StyleSheet, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Body, Button, Heading } from "@/components/ui";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { Marker, Reveal } from "@/components/motion";
+import { Body, Button, Chip, Eyebrow, Heading, Illustration, Logo, Pill, Screen } from "@/components/ui";
 import i18n, { UI_LANGUAGES } from "@/lib/i18n";
 import { colors, space } from "@/theme/tokens";
-import { languageName } from "@bc/shared";
 
 // Bienvenida: propuesta de valor + idioma de la interfaz (sin banderas).
 export default function Welcome() {
   const { t } = useTranslation();
   return (
-    <SafeAreaView style={s.screen}>
-      <View style={s.mark}>
-        <View style={[s.bubble, { backgroundColor: colors.blueSoft }]} />
-        <View style={[s.bubble, { backgroundColor: colors.yellow, marginLeft: -18, marginTop: 22 }]} />
-      </View>
-      <Heading>{t("welcome.title")}</Heading>
-      <View style={{ height: space.md }} />
-      <Body>{t("welcome.body")}</Body>
-      <View style={{ height: space.sm }} />
-      <Body muted>{t("tagline")}</Body>
-      <View style={s.langs}>
-        {UI_LANGUAGES.map((l) => (
-          <Button
-            key={l}
-            label={languageName(l, l)}
-            variant={i18n.language === l ? "primary" : "secondary"}
-            onPress={() => void i18n.changeLanguage(l)}
-            style={{ paddingHorizontal: space.lg, paddingVertical: space.sm }}
-          />
-        ))}
-      </View>
-      <View style={{ flex: 1 }} />
-      <Button label={t("welcome.cta")} onPress={() => router.push("/sign-in")} />
-    </SafeAreaView>
+    <Screen blobs>
+      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+        <Reveal style={{ marginBottom: space.xl }}>
+          <Logo variant="horizontal" height={34} />
+        </Reveal>
+
+        <Reveal delay={80}>
+          <Illustration style={{ marginBottom: space.xl }} />
+        </Reveal>
+
+        <Reveal delay={160} style={{ gap: space.md }}>
+          <Eyebrow>{t("welcome.eyebrow")}</Eyebrow>
+          <Heading>{t("welcome.title")}</Heading>
+          <Body muted>{t("welcome.body")}</Body>
+          <Pill tone="sky" label={t("welcome.pairs")} />
+        </Reveal>
+
+        <Reveal delay={240} style={{ marginTop: space.xl, gap: space.sm }}>
+          <Marker>{t("tagline")}</Marker>
+        </Reveal>
+
+        <Reveal delay={320} style={{ marginTop: space.xl, gap: space.sm }}>
+          <Eyebrow style={{ color: colors.muted }}>{t("welcome.uiLanguage")}</Eyebrow>
+          <View style={s.langs}>
+            {UI_LANGUAGES.map((l) => (
+              <Chip key={l} label={languageName(l, l)} selected={i18n.language === l} onPress={() => void i18n.changeLanguage(l)} />
+            ))}
+          </View>
+        </Reveal>
+
+        <View style={{ marginTop: space.xl }}>
+          <Button label={t("welcome.cta")} onPress={() => router.push("/sign-in")} />
+        </View>
+      </ScrollView>
+    </Screen>
   );
 }
 
 const s = StyleSheet.create({
-  screen: { flex: 1, padding: space.xl, backgroundColor: colors.cream },
-  mark: { flexDirection: "row", marginVertical: space.xxl },
-  bubble: { width: 64, height: 52, borderRadius: 22 },
-  langs: { flexDirection: "row", flexWrap: "wrap", gap: space.sm, marginTop: space.xl },
+  content: { padding: space.xl, paddingTop: space.lg },
+  langs: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
 });

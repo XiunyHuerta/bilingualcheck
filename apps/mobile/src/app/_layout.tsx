@@ -1,6 +1,6 @@
 import "@/lib/i18n";
-import { Inter_400Regular, Inter_500Medium } from "@expo-google-fonts/inter";
-import { Manrope_700Bold } from "@expo-google-fonts/manrope";
+import { DMSans_400Regular, DMSans_400Regular_Italic, DMSans_500Medium, DMSans_600SemiBold, DMSans_700Bold } from "@expo-google-fonts/dm-sans";
+import { Manrope_700Bold, Manrope_800ExtraBold } from "@expo-google-fonts/manrope";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
@@ -12,7 +12,15 @@ import { colors, fonts } from "@/theme/tokens";
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 5_000 } } });
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({ Manrope_700Bold, Inter_400Regular, Inter_500Medium });
+  const [fontsLoaded] = useFonts({
+    Manrope_700Bold,
+    Manrope_800ExtraBold,
+    DMSans_400Regular,
+    DMSans_400Regular_Italic,
+    DMSans_500Medium,
+    DMSans_600SemiBold,
+    DMSans_700Bold,
+  });
   const { token, ready, load } = useSession();
 
   useEffect(() => {
@@ -28,8 +36,8 @@ export default function RootLayout() {
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: colors.cream },
-          headerTitleStyle: { fontFamily: fonts.heading, color: colors.blueDeep },
-          headerTintColor: colors.blueDeep,
+          headerTitleStyle: { fontFamily: fonts.heading, color: colors.ink },
+          headerTintColor: colors.cobalt,
           contentStyle: { backgroundColor: colors.cream },
           headerShadowVisible: false,
         }}
@@ -40,7 +48,9 @@ export default function RootLayout() {
         <Stack.Protected guard={signedIn}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="new" options={{ presentation: "modal" }} />
-          <Stack.Screen name="project/[id]" />
+          <Stack.Screen name="project/[id]/index" />
+          <Stack.Screen name="project/[id]/timeline" />
+          <Stack.Screen name="project/[id]/delivery/[sid]" />
           <Stack.Screen name="checkout/return" options={{ headerShown: false }} />
         </Stack.Protected>
         <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
