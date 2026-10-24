@@ -1,4 +1,4 @@
-import type Anthropic from "@anthropic-ai/sdk";
+import type { Anthropic } from "@anthropic-ai/sdk";
 import { BriefSchema, type Brief, type ProjectStatus } from "@bc/shared";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";

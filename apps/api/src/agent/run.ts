@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { Anthropic } from "@anthropic-ai/sdk";
 import { and, desc, eq, gt, inArray } from "drizzle-orm";
 import { db, schema } from "../db/client";
 import type { Message } from "../db/schema";

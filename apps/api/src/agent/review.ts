@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { Anthropic } from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { type Brief, SubmissionReviewSchema, type SubmissionReview } from "@bc/shared";
 import { env } from "../env";
