@@ -12,6 +12,8 @@ export const app = new Hono();
 
 app.use("*", logger());
 app.use("/v1/*", cors());
+// La versión web de la app consulta /health desde otro dominio (etiqueta "Concept demo").
+app.use("/health", cors());
 
 // Quien abre la URL en el navegador ve qué es esto en vez de un 404 (la interfaz es la app Expo).
 app.get("/", (c) =>
