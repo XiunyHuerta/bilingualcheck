@@ -1,4 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "pnpm build",
+  "rewrites": [{ "source": "/(.*)", "destination": "/api" }],
   "crons": [{ "path": "/cron/poll-quotes", "schedule": "0 12 * * *" }]
 }
