@@ -16,3 +16,6 @@ apps/mobile/android/
 .env*
 dist/
 apps/api/public/
+
+# Video demo (render local, pesa ~120 MB): no se sube al repositorio
+video/
