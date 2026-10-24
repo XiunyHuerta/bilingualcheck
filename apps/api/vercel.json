@@ -3,6 +3,7 @@
   "framework": null,
   "buildCommand": "pnpm build",
   "outputDirectory": "public",
+  "functions": { "api/index.mjs": { "maxDuration": 300 } },
   "rewrites": [
     {
       "source": "/(.*)",

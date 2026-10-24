@@ -1,5 +1,7 @@
 # 06 · App móvil (React Native + Expo)
 
+Estado 2026-10-24: el flujo web/nativo de Whop usa callbacks distintos y retorno por plataforma (doc 05). La pantalla de revisión muestra texto entregado y descarga privada, bloquea la aprobación sin revisión y ofrece reintento si falla la IA. El sondeo se conserva como respaldo de Realtime; los tokens/credenciales de proveedores siguen solo en la API. El plan de validación real está en docs/08 y docs/10.
+
 ## Stack
 
 | Necesidad | Librería |

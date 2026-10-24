@@ -9,6 +9,7 @@ const EnvSchema = z.object({
   PORT: z.coerce.number().default(8787),
   PUBLIC_API_URL: z.string().url().default("http://localhost:8787"),
   APP_SCHEME: z.string().default("bilingualcheck"),
+  WEB_APP_URL: z.string().url().default("https://bilingualcheck-app.vercel.app"),
 
   SESSION_JWT_SECRET: z.string().min(32, "SESSION_JWT_SECRET debe tener al menos 32 caracteres"),
 
@@ -40,6 +41,7 @@ const EnvSchema = z.object({
 
   FEE_RATE: z.coerce.number().min(0).max(1).default(0.25),
   BUDGET_CAP_USD: z.coerce.number().positive().default(300),
+  TERAC_SPEND_CAP_USD: z.coerce.number().positive().default(100),
   CRON_SECRET: optional,
 });
 
@@ -50,6 +52,27 @@ export class ConfigError extends Error {
   constructor(readonly missing: string[]) {
     super(`Servidor sin configurar: faltan ${missing.join(", ")}`);
   }
+}
+
+// Solo lo que necesita el cliente de Terac: los scripts `terac:*` deben funcionar con la
+// API key aunque Supabase, Whop o Anthropic todavía no estén configurados.
+const TeracEnvSchema = EnvSchema.pick({
+  TERAC_MODE: true,
+  TERAC_BASE_URL: true,
+  TERAC_API_KEY: true,
+  TERAC_DEMO_FEASIBILITY_REQUEST_ID: true,
+});
+
+export function teracEnv() {
+  const parsed = TeracEnvSchema.safeParse(process.env);
+  if (!parsed.success) throw new ConfigError([...new Set(parsed.error.issues.map((i) => i.path.join(".")))]);
+  return parsed.data;
+}
+
+export function teracApiKey(): string {
+  const key = teracEnv().TERAC_API_KEY;
+  if (!key) throw new ConfigError(["TERAC_API_KEY"]);
+  return key;
 }
 
 let cached: Env | undefined;

@@ -91,7 +91,7 @@
     "title": "Revisão da entrega",
     "professional": "Profissional",
     "professionalNote": "Uma pessoa real com experiência no seu mercado.",
-    "illustrativeNote": "Perfil de exemplo: esta demo usa respostas gravadas da Terac.",
+    "illustrativeNote": "Perfil de exemplo: esta demo usa respostas simuladas da Terac.",
     "aiTitle": "Avaliação da IA",
     "meets": "Cumpre o briefing",
     "needsLook": "Vale revisar",
@@ -112,7 +112,12 @@
     "approvedBody": "Obrigado. O profissional recebe o pagamento e o projeto fica entregue.",
     "approvalNote": "Você decide: ao aprovar, o profissional recebe o pagamento.",
     "notFound": "Não encontramos esta entrega.",
-    "error": "Não foi possível enviar sua decisão. Tente novamente."
+    "error": "Não foi possível enviar sua decisão. Tente novamente.",
+    "contentTitle": "Trabalho entregue",
+    "download": "Baixar entrega",
+    "downloadError": "Não foi possível baixar o arquivo. Tente novamente.",
+    "retryHint": "A avaliação não foi concluída. Você pode tentar novamente.",
+    "retry": "Tentar avaliação novamente"
   },
   "status": {
     "intake": "Conversando",

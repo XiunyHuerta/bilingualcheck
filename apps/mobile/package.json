@@ -9,7 +9,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"(sin tests en mobile todavía)\""
+    "test": "echo \"(sin tests en mobile todavía)\"",
+    "lint": "expo lint"
   },
   "dependencies": {
     "@bc/shared": "workspace:*",
@@ -43,6 +44,8 @@
   },
   "devDependencies": {
     "@types/react": "~19.3.0",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "~58.0.4"
   }
 }

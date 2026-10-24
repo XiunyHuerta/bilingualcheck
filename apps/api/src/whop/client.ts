@@ -3,10 +3,10 @@ import { unwrapWebhook } from "@whop/sdk/helpers";
 import { z } from "zod";
 import { env, required } from "../env";
 import { ApiError } from "../lib/errors";
+import { checkoutRedirectUrl, validateOAuthRedirectUri } from "./redirects";
 
 // Whop para identidad (Sign in with Whop) y cobro (checkout alojado + webhook).
-// Las URLs de OAuth del sandbox siguen el mismo patrón que la API del SDK
-// (sandbox-api.whop.com) [verificar en el panel de Whop si cambian].
+// Hosts confirmados por las guías oficiales enlazadas en docs/05-integracion-whop.md.
 
 const oauthBase = () => (env().WHOP_ENV === "sandbox" ? "https://sandbox-api.whop.com" : "https://api.whop.com");
 
@@ -19,10 +19,10 @@ function whop() {
   return sdk;
 }
 
-const TokenResponse = z.object({ access_token: z.string(), refresh_token: z.string().optional() }).loose();
+const TokenResponse = z.object({ access_token: z.string().min(1), refresh_token: z.string().optional() }).loose();
 const UserInfo = z
   .object({
-    sub: z.string(),
+    sub: z.string().min(1),
     email: z.string().nullable().optional(),
     name: z.string().nullable().optional(),
     preferred_username: z.string().nullable().optional(),
@@ -30,44 +30,61 @@ const UserInfo = z
   .loose();
 export type WhopUserInfo = z.infer<typeof UserInfo>;
 
+async function oauthFetch(path: string, init: RequestInit) {
+  try {
+    return await fetch(`${oauthBase()}/oauth/${path}`, { ...init, signal: AbortSignal.timeout(15_000) });
+  } catch {
+    throw new ApiError("UPSTREAM_WHOP", "No se pudo conectar con Whop");
+  }
+}
+
+async function oauthJson<T>(response: Response, schema: z.ZodType<T>): Promise<T> {
+  try {
+    return schema.parse(await response.json());
+  } catch {
+    throw new ApiError("UPSTREAM_WHOP", "Whop devolvió una respuesta inválida");
+  }
+}
+
 /** Intercambia el código de OAuth (PKCE) y devuelve el perfil del usuario de Whop. */
 export async function exchangeOAuthCode(input: { code: string; code_verifier: string; redirect_uri: string }) {
-  const form = new URLSearchParams({
+  validateOAuthRedirectUri(input.redirect_uri);
+  const payload: Record<string, string> = {
     grant_type: "authorization_code",
     code: input.code,
     code_verifier: input.code_verifier,
     redirect_uri: input.redirect_uri,
     client_id: required("WHOP_CLIENT_ID"),
-  });
+  };
   const secret = env().WHOP_CLIENT_SECRET;
-  if (secret) form.set("client_secret", secret);
+  if (secret) payload.client_secret = secret;
 
-  const tokenRes = await fetch(`${oauthBase()}/oauth/token`, {
+  const tokenRes = await oauthFetch("token", {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
-    body: form,
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(payload),
   });
   if (!tokenRes.ok) {
     throw new ApiError("UPSTREAM_WHOP", "Whop rechazó el código de autorización", {
       status: tokenRes.status,
-      body: await tokenRes.text(),
     });
   }
-  const tokens = TokenResponse.parse(await tokenRes.json());
+  const tokens = await oauthJson(tokenRes, TokenResponse);
 
-  const infoRes = await fetch(`${oauthBase()}/oauth/userinfo`, {
+  const infoRes = await oauthFetch("userinfo", {
     headers: { Authorization: `Bearer ${tokens.access_token}` },
   });
   if (!infoRes.ok) throw new ApiError("UPSTREAM_WHOP", "No se pudo leer el perfil de Whop", { status: infoRes.status });
-  return { profile: UserInfo.parse(await infoRes.json()), refreshToken: tokens.refresh_token };
+  return { profile: await oauthJson(infoRes, UserInfo), refreshToken: tokens.refresh_token };
 }
 
 export async function revokeToken(token: string) {
-  await fetch(`${oauthBase()}/oauth/revoke`, {
+  const response = await oauthFetch("revoke", {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ token, client_id: required("WHOP_CLIENT_ID") }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, client_id: required("WHOP_CLIENT_ID"), ...(env().WHOP_CLIENT_SECRET ? { client_secret: env().WHOP_CLIENT_SECRET } : {}) }),
   });
+  if (!response.ok) throw new ApiError("UPSTREAM_WHOP", "No se pudo revocar el token de Whop", { status: response.status });
 }
 
 /**
@@ -79,12 +96,14 @@ export async function createProjectCheckout(input: {
   quoteId: string;
   totalUsd: number;
   title: string;
+  returnTo?: string;
 }) {
+  const redirectUrl = checkoutRedirectUrl(input.projectId, input.returnTo);
   try {
     const checkout = await whop().checkoutConfigurations.create({
       account_id: required("WHOP_ACCOUNT_ID"),
       metadata: { project_id: input.projectId, quote_id: input.quoteId },
-      redirect_url: `${env().PUBLIC_API_URL}/checkout/return?project_id=${input.projectId}`,
+      redirect_url: redirectUrl,
       plan: {
         product_id: required("WHOP_PRODUCT_ID"),
         plan_type: "one_time",

@@ -9,9 +9,11 @@
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file=.env src/db/migrate.ts",
+    "terac:setup": "tsx --env-file=.env scripts/terac-setup.ts",
     "terac:filters": "tsx --env-file=.env scripts/terac-filters.ts",
     "terac:webhooks": "tsx --env-file=.env scripts/terac-webhooks.ts",
-    "build": "esbuild src/index.ts --bundle --platform=node --target=node24 --format=esm --outfile=dist/server.mjs --banner:js=\"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);\" && node -e \"require('fs').mkdirSync('public',{recursive:true});require('fs').writeFileSync('public/robots.txt','User-agent: *\\nDisallow: /\\n')\""
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node24 --format=esm --outfile=dist/server.mjs --banner:js=\"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);\" && node -e \"require('fs').mkdirSync('public',{recursive:true});require('fs').writeFileSync('public/robots.txt','User-agent: *\\nDisallow: /\\n')\"",
+    "demo:seed": "tsx --env-file=.env scripts/demo-seed.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.3.0",

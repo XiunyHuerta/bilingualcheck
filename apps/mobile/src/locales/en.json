@@ -91,7 +91,7 @@
     "title": "Delivery review",
     "professional": "Professional",
     "professionalNote": "A real person with experience in your market.",
-    "illustrativeNote": "Example profile: this demo uses recorded Terac responses.",
+    "illustrativeNote": "Example profile: this demo uses simulated Terac responses.",
     "aiTitle": "AI assessment",
     "meets": "Meets the brief",
     "needsLook": "Worth a closer look",
@@ -112,7 +112,12 @@
     "approvedBody": "Thank you. The professional gets paid and the project is delivered.",
     "approvalNote": "You decide: when you approve, the professional gets paid.",
     "notFound": "We couldn't find this delivery.",
-    "error": "We couldn't send your decision. Please try again."
+    "error": "We couldn't send your decision. Please try again.",
+    "contentTitle": "Delivered work",
+    "download": "Download delivery",
+    "downloadError": "We could not download the file. Please try again.",
+    "retryHint": "The assessment could not finish. You can try again.",
+    "retry": "Retry assessment"
   },
   "status": {
     "intake": "Chatting",

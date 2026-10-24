@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, Stack, useLocalSearchParams } from "expo-router";
+import * as Linking from "expo-linking";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -24,7 +25,8 @@ export default function DeliveryReview() {
   const [feedback, setFeedback] = useState("");
   const [sent, setSent] = useState<"approved" | "changes_requested" | null>(null);
 
-  const detail = useQuery({ queryKey: ["project", id], queryFn: () => api<ProjectDetail>(`/v1/projects/${id}`) });
+  const detail = useQuery({ queryKey: ["project", id], queryFn: () => api<ProjectDetail>(`/v1/projects/${id}`),
+    refetchInterval: (query) => ["in_review", "revision"].includes(query.state.data?.project.status ?? "") ? 5_000 : false });
   const submission = detail.data?.submissions.find((sub) => sub.id === sid);
   const review = submission?.ai_review ?? null;
 
@@ -39,7 +41,13 @@ export default function DeliveryReview() {
   });
 
   const decided = sent ?? submission?.client_decision ?? null;
-  const canDecide = detail.data?.project.status === "in_review" && !decided;
+  const canDecide = detail.data?.project.status === "in_review" && !decided && Boolean(review);
+  const download = useMutation({ mutationFn: async () => {
+    const result = await api<{ url: string }>(`/v1/projects/${id}/assets/${submission!.delivery_asset_id}/url`);
+    await Linking.openURL(result.url);
+  } });
+  const retryReview = useMutation({ mutationFn: () => post(`/v1/projects/${id}/submissions/${sid}/review`),
+    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ["project", id] }); } });
   const pro = submission?.participant_summary;
 
   return (
@@ -83,6 +91,15 @@ export default function DeliveryReview() {
               </Card>
             </Reveal>
 
+            {submission.delivery_text ? (
+              <Card style={{ marginTop: space.xl }}>
+                <Heading level={2}>{t("review.contentTitle")}</Heading>
+                <Body small style={{ marginTop: space.md }}>{submission.delivery_text}</Body>
+                {submission.delivery_asset_id ? <Button label={t("review.download")} variant="secondary"
+                  onPress={() => download.mutate()} loading={download.isPending} style={{ marginTop: space.md }} /> : null}
+                {download.isError ? <Body small>{t("review.downloadError")}</Body> : null}
+              </Card>
+            ) : null}
             <Reveal delay={100} style={{ marginTop: space.xl }}>
               <Card tone="sky">
                 <View style={s.aiHead}>
@@ -120,6 +137,11 @@ export default function DeliveryReview() {
                     {t("review.pending")}
                   </Body>
                 )}
+                {submission.review_error ? <View style={{ marginTop: space.md, gap: space.sm }}>
+                  <Body small>{t("review.retryHint")}</Body>
+                  <Button label={t("review.retry")} variant="secondary" onPress={() => retryReview.mutate()} loading={retryReview.isPending} />
+                  {retryReview.isError ? <Body small>{t("review.error")}</Body> : null}
+                </View> : null}
               </Card>
             </Reveal>
 
@@ -183,6 +205,7 @@ export default function DeliveryReview() {
                     label={t("review.sendChanges")}
                     onPress={() => decide.mutate({ decision: "request_changes", feedback: feedback.trim() || undefined })}
                     loading={decide.isPending}
+                    disabled={!feedback.trim()}
                   />
                   <Button label={t("review.cancel")} variant="ghost" onPress={() => setAsking(false)} disabled={decide.isPending} />
                 </View>

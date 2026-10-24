@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { AccessibilityInfo, Animated, Easing, Platform, StyleSheet, Text, type StyleProp, type TextStyle, type ViewStyle, View } from "react-native";
 import { colors, space } from "@/theme/tokens";
 
@@ -17,7 +17,7 @@ function play(value: Animated.Value, config: Omit<Animated.TimingAnimationConfig
 
 /** Entrada de un bloque: fade + 26 px hacia arriba. */
 export function Reveal({ children, delay = 0, style }: { children: ReactNode; delay?: number; style?: StyleProp<ViewStyle> }) {
-  const v = useRef(new Animated.Value(0)).current;
+  const [v] = useState(() => new Animated.Value(0));
   useEffect(() => {
     play(v, { duration: 500, delay, easing: easeOut, useNativeDriver: native });
   }, [v, delay]);
@@ -30,7 +30,7 @@ export function Reveal({ children, delay = 0, style }: { children: ReactNode; de
 
 /** Aparición de chips, tarjetas y checks: pop con rebote desde escala 0.55. */
 export function Pop({ children, delay = 0, style }: { children: ReactNode; delay?: number; style?: StyleProp<ViewStyle> }) {
-  const v = useRef(new Animated.Value(0)).current;
+  const [v] = useState(() => new Animated.Value(0));
   useEffect(() => {
     play(v, { duration: 420, delay, easing: backOut, useNativeDriver: native });
   }, [v, delay]);
@@ -43,7 +43,7 @@ export function Pop({ children, delay = 0, style }: { children: ReactNode; delay
 
 /** Marcador: subrayado de 42 % de alto que se pinta de izquierda a derecha. Coral señala problemas. */
 export function Marker({ children, tone = "gold", delay = 500, textStyle }: { children: string; tone?: "gold" | "coral"; delay?: number; textStyle?: StyleProp<TextStyle> }) {
-  const v = useRef(new Animated.Value(0)).current;
+  const [v] = useState(() => new Animated.Value(0));
   useEffect(() => {
     play(v, { duration: 700, delay, easing: Easing.inOut(Easing.cubic), useNativeDriver: false });
   }, [v, delay]);
@@ -60,7 +60,7 @@ export function Marker({ children, tone = "gold", delay = 500, textStyle }: { ch
 
 /** "El agente está escribiendo…": tres puntos que laten en cascada. */
 export function TypingDots() {
-  const dots = useRef([0, 1, 2].map(() => new Animated.Value(0))).current;
+  const [dots] = useState(() => [0, 1, 2].map(() => new Animated.Value(0)));
   useEffect(() => {
     const loops = dots.map((d, i) =>
       Animated.loop(

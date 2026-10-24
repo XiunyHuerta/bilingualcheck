@@ -7,20 +7,20 @@ apps/api        Hono (Vercel) · Drizzle + Supabase · agente Claude · Terac ·
 apps/mobile     Expo SDK 58 · Expo Router (src/app) · React Query · Realtime · iOS, Android y web
 packages/shared Estados y transiciones, esquemas zod, idiomas BCP-47, precio
 vendor/terac    openapi.json de Terac v2 (beta) descargado el día 0
-docs/           Planificación (01–08) y guía de estilo UI (styleUIguide.md)
+docs/           Planificación, despliegue (09), entregas (10) y guía de estilo UI
 ```
 
 ## Estado del proyecto
 
 > **Fase actual: 5 de 6 — Contratación y entregas (en curso).** Actualizado el 2026-10-24.
-> Las fases 1–4 tienen el código completo y typecheck/tests en verde; todavía no se han validado de punta a punta con claves reales. La fase 5 tiene la app lista y el backend a medias. La fase 6 (pulido) ya empezó por el diseño.
+> La fase 5 ya incluye portal de entrega textual, revisión con IA, correcciones y descarga. Falta validar el circuito con cuentas reales. La configuración de servicios sigue incompleta; tener código o un despliegue `READY` no acredita que login, pagos o contratación funcionen.
 
 | Fase | Qué cubre | Estado | Qué falta |
 |------|-----------|--------|-----------|
-| 1 · Esqueleto conectado | Monorepo, Hono en Vercel, Drizzle + Supabase, Expo Router, login con Whop, turno básico del agente | ✅ Código listo · 🟡 sin validar con servicios reales | Claves reales, `pnpm db:migrate`, login en un *development build* |
+| 1 · Esqueleto conectado | Monorepo, API y web en Vercel, Supabase, login con Whop | 🟡 Integración pendiente | Supabase inicial se aplicó en la sesión anterior (11 tablas, RLS, buckets, Realtime). Faltan credenciales y la migración nueva; login real sin verificar |
 | 2 · Brief y materiales | Herramientas `ask_client` / `save_brief`, subida con URL firmada, tarjetas de respuestas rápidas y brief | ✅ Código listo · 🟡 sin validar | Pruebas de conversación en 3 pares de idiomas (es→en, pt→en, ko→es) |
-| 3 · Cotización con Terac | Cliente REST, `request_quote`, cron `/cron/poll-quotes`, modo `replay`, tarjeta de cotización | ✅ Código listo · 🟡 sin validar | Mapa de filtros de Terac (`terac/filters.ts` sigue vacío), cotización real |
-| 4 · Pago con Whop | `quote/accept` → checkout, webhook `payment.succeeded`, pantalla `checkout/return` | ✅ Código listo · 🟡 sin validar | Pago de prueba en el sandbox de Whop |
+| 3 · Cotización con Terac | Cliente REST, `request_quote`, cron `/cron/poll-quotes`, modo `replay`, tarjeta de cotización | ✅ Código listo · 🟡 sin validar | API key de Terac en `apps/api/.env`; cotización real y webhooks. Ya están: proyecto «BilingualCheck» en Terac y filtros de país e idioma |
+| 4 · Pago con Whop | OAuth web con PKCE/state, puente HTTPS nativo, checkout por plataforma y webhooks recuperables | 🟡 Código y tests listos | App/producto/API key/webhook del sandbox y pago de prueba real |
 | **5 · Contratación y entregas** | Oportunidad en Terac, webhooks, revisión con IA, entrega y aprobación | 🟡 **En curso** | Ver detalle abajo |
 | 6 · Pulido y demo | i18n, estados vacíos/errores, datos de demo, video, diapositivas | 🟡 Empezada | Datos de demo, diapositivas, ensayos |
 
@@ -28,11 +28,13 @@ docs/           Planificación (01–08) y guía de estilo UI (styleUIguide.md)
 
 - ✅ `create_opportunity` + `launch_opportunity`, webhook `/webhooks/terac` con HMAC, sincronización de entregas, `POST …/submissions/:sid/decision` (aprobar / pedir cambios).
 - ✅ App: tarjeta de **entrega**, pantalla de **revisión** (profesional, evaluación de la IA, criterios, aprobar / pedir cambios) y **línea de tiempo** del proyecto.
-- ⬜ Backend: `reviewSubmission` (Opus) existe en `agent/review.ts` pero **ningún flujo lo invoca todavía**, y el agente aún no publica la tarjeta `delivery`. Mientras tanto la app arma la tarjeta con los datos de la entrega y muestra «La IA todavía está revisando…».
-- ⬜ Backend: ronda de correcciones (nueva oportunidad con el feedback del cliente) y decidir cómo llegan los archivos (ver *Terac entregas* abajo).
+- ✅ Backend: el profesional entrega los textos desde un portal privado; cada versión se conserva en Storage. `reviewSubmission` se ejecuta al tener contenido y estado `awaiting_review` de Terac, y publica la tarjeta `delivery` con su explicación.
+- ✅ Correcciones en el mismo portal: se muestra el feedback, se recibe otra versión y se vuelve a revisar. Pedir cambios no aprueba, rechaza ni contrata otro trabajo automáticamente. **La coordinación y finalización de tarea con Terac aún requieren prueba real.**
+- ✅ Aprobación ligada al proyecto propietario y a la última versión revisada; texto y archivo descargable en la app. Webhooks fallidos recuperables por mantenimiento, sin publicar dos veces la misma revisión.
+- ⬜ Entregables binarios del profesional (PDF, imágenes, DOCX): el MVP recibe texto; la app sigue aceptando imágenes/PDF como materiales del cliente.
 - ⬜ Notificaciones push (`expo-notifications`, requiere *development build*).
 
-**Fase 6, lo hecho**: sistema de diseño de la marca aplicado a toda la app (ver más abajo), textos en es/en/pt, estados vacíos, de error y «el agente está escribiendo…», etiqueta «Demo conceptual» cuando Terac corre en `replay`, y un video demo en `video/`.
+**Fase 6, lo hecho**: sistema de diseño, es/en/pt, estados de carga/error y etiqueta «Demo conceptual» en replay; semilla idempotente con proyectos de ejemplo y CI (tipos, tests, lint, compilación API/web). El video de concepto está en `video/`, ignorado por git; no acredita un recorrido real de la app.
 
 ### Diseño de la app
 
@@ -43,6 +45,7 @@ La interfaz sigue [`docs/styleUIguide.md`](docs/styleUIguide.md): paleta cobalt/
 ```bash
 pnpm install
 pnpm env:check          # dice qué variables faltan en apps/api/.env y apps/mobile/.env
+pnpm env:check --group all # incluye AI, OAuth y pagos; las opcionales no bloquean
 pnpm db:migrate         # migraciones + RLS, Realtime y buckets (supabase/setup.sql)
 pnpm dev:api            # http://localhost:8787/health
 pnpm dev:mobile         # Expo
@@ -58,27 +61,29 @@ Las plantillas son `apps/api/.env.example` y `apps/mobile/.env.example`. Los `.e
 | `SESSION_JWT_SECRET` | Supabase → Settings → API → JWT Settings (*legacy JWT secret*). Así Realtime + RLS aceptan nuestro JWT |
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Settings → API (anon key, es pública) |
 | `ANTHROPIC_API_KEY` | console.anthropic.com |
-| `TERAC_API_KEY`, `TERAC_PROJECT_ID` | Terac → organización. `TERAC_PROJECT_ID` se crea una vez con `POST /projects` |
-| `TERAC_WEBHOOK_SECRET` | `pnpm terac:webhooks` (necesita `PUBLIC_API_URL` pública) |
+| `TERAC_API_KEY` | Terac → organización → API keys (la creas tú; solo va en `apps/api/.env`) |
+| `TERAC_PROJECT_ID` | `pnpm terac:setup`: comprueba la clave, busca o crea el proyecto «BilingualCheck» y lo guarda en `.env` |
+| `TERAC_WEBHOOK_SECRET` | `pnpm terac:webhooks` lo guarda localmente; configurar Vercel y confirmar con `--confirm <id>` |
 | `WHOP_*` | Whop Developer Dashboard, en **sandbox**: app OAuth (client id), API key, `biz_…`, `prod_…`, webhook |
 | `CRON_SECRET` | Ya generado en `apps/api/.env`; copiarlo también a Vercel |
 
-Sin claves, el backend arranca y `/health` responde; `TERAC_MODE=replay` simula Terac (la cotización tarda 20 s y cuesta 84 USD).
+Sin claves, el backend arranca y `/health` responde con un diagnóstico de presencia de configuración (no prueba conectividad). `TERAC_MODE=replay` simula Terac: costo ilustrativo 84 USD, total con comisión 25 % = 105 USD. `TERAC_SPEND_CAP_USD=100` limita el costo del proveedor por cotización; `BUDGET_CAP_USD=300` limita el total al cliente. No son el mismo límite ni representan una reserva acumulada de saldo.
 
 ## Qué confirmamos de los puntos [verificar]
 
 - **Terac `POST /feasibility/requests`**: el cuerpo es `taskDescription` + `panelDescription` (+ `submissionCount`, `timelineHours`, `payRateFrequency`, `loiMinutes`). Respuesta con `status` `RECEIVED → RESPONDED` (o `LOST`/`NOT_PURSUED`) y `costPerParticipant` como string.
 - **Terac sandbox**: existe `POST /opportunities/{id}/test-submissions`, que simula un profesional y dispara los webhooks reales firmados. Útil para la fase 5 sin gastar.
 - **Terac `screening_questions`** usa `text` + `pick`, no `question`.
-- **Terac entregas**: `GET /submissions/{id}` **no devuelve los archivos** de una tarea `file_upload` (solo estado, perfil y tareas). Para que la IA revise el contenido, la alternativa robusta es una tarea `interview` con `task_url` a una página nuestra donde el profesional entrega el trabajo. Decidir antes de la fase 5.
+- **Terac entregas**: el MVP usa una tarea `interview` con `task_url` a nuestro portal. Terac añade `teracSubmissionId`/`submissionId`; la API comprueba la oportunidad antes de leer o guardar contenido. La revisión nunca inventa contenido ausente. Ver [entregas y migración](docs/10-entregas-y-validacion.md).
 - **Whop checkout**: `checkoutConfigurations.create` acepta `metadata` (se copia al pago y vuelve en el webhook), un `plan` en línea con `initial_price` y `redirect_url`. El webhook se verifica con `unwrapWebhook` de `@whop/sdk/helpers` (Standard Webhooks).
-- **Whop sandbox**: la API está en `https://sandbox-api.whop.com/api/v1`. Las URLs OAuth del sandbox se asumen en `sandbox-api.whop.com/oauth/*` — confirmar en el panel.
+- **Whop sandbox**: checkout y OAuth usan los hosts documentados del sandbox. El código usa JSON, valida el callback web y tiene puente HTTPS nativo; falta comprobar las credenciales y los flujos reales de la cuenta. Ver [doc 05](docs/05-integracion-whop.md).
 
 ## Pendiente
 
-- Claves reales y `pnpm db:migrate` contra Supabase; probar el login con Whop en un **development build** (`eas build --profile development`).
+- Reconectar Supabase y Vercel al equipo `xiu17` en esta sesión, completar credenciales y aplicar `0001_flawless_scarlet_spider.sql` mediante `pnpm db:migrate`. Las migraciones iniciales se aplicaron en la sesión anterior; la nueva aún no.
 - **Vercel Cron cada minuto requiere plan Pro**; en Hobby, usar un cron externo contra `/cron/poll-quotes` con `CRON_SECRET`. En local, `pnpm dev:api` ya sondea cada 30 s.
-- Mapa de filtros de Terac (`pnpm terac:filters` → `apps/api/src/terac/filters.ts`).
-- Fase 5 (backend): invocar `reviewSubmission` (`apps/api/src/agent/review.ts`) al recibir una entrega, publicar la tarjeta `delivery` desde el agente y la ronda de correcciones. La tarjeta, la pantalla de revisión y la línea de tiempo ya están en la app.
-- Fase 6: datos de demo, diapositivas, ensayos; notificaciones push (requieren *development build*).
+- Terac, en orden: 1) crear la API key en la misma organización (la del conector) y ponerla en `TERAC_API_KEY`; 2) `pnpm terac:setup --check` para comprobar la clave y el `TERAC_PROJECT_ID` (el proyecto «BilingualCheck» ya existe y su ID ya está en `.env`); 3) `pnpm terac:webhooks` con la API desplegada; 4) pedir una cotización real y guardar su id en `TERAC_DEMO_FEASIBILITY_REQUEST_ID`; 5) `TERAC_MODE=live` solo cuando quieras gastar saldo real (hoy hay US$ 100 de saldo).
+- Filtros de Terac: país (`multi_select--country`) e idioma principal (`multi_select--language`, con la tabla de las 184 opciones en `apps/api/src/terac/filters.ts`) ya están confirmados contra la API.
+- Fase 5: validar la entrega del profesional, finalización en Terac, revisión y aprobación reales con el sandbox. Los textos ya tienen flujo de recepción/revisión/corrección.
+- Fase 6: ejecutar `pnpm demo:seed --user-id=<uuid>` después del primer login, diapositivas y ensayos; push nativo pendiente.
 - Probar la app con una cuenta real en dispositivo: la UI nueva se revisó en el navegador (web) contra una API simulada, no en iOS/Android.

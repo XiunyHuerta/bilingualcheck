@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: "1"
+      EXPO_NO_DOTENV: "1"
+      TERAC_MODE: replay
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: pnpm/action-setup@v4
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Check environment tooling
+        run: node --test scripts/env.test.mjs
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Lint mobile
+        run: pnpm --filter @bc/mobile lint
+      - name: Test
+        run: pnpm test
+      - name: Build API
+        run: pnpm --filter @bc/api build
+      - name: Export web
+        run: pnpm --filter @bc/mobile exec expo export --platform web

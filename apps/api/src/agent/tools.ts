@@ -5,6 +5,7 @@ import { z } from "zod";
 import { db, schema } from "../db/client";
 import type { Project } from "../db/schema";
 import { env, required } from "../env";
+import { deliveryPortalUrl } from "../lib/delivery-token";
 import { signedDownloadUrl } from "../lib/storage";
 import { addMessage, requireStatus, transition } from "../services/projects";
 import { terac } from "../terac/client";
@@ -210,20 +211,16 @@ async function opportunityBody(project: Project, feasibilityRequestId: string) {
     tasks: [
       {
         sequence: 1,
-        task_type: "file_upload" as const,
+        task_type: "interview" as const,
+        task_url: await deliveryPortalUrl(project.id),
         review_type: "manual_review" as const,
         title: "Entrega de la adaptación",
         instructions: [
+          "Abre la página de entrega para ver el brief y enviar los textos adaptados con las notas culturales. Tras enviarlos, vuelve a Terac y marca la tarea como terminada. La aprobación y el pago requieren la decisión del cliente.",
           "Materiales del cliente (enlaces válidos 7 días):",
           links.join("\n") || "- (sin archivos; usa la descripción)",
           `Entrega: ${brief.deliverables.join("; ")}. Incluye notas culturales que expliquen cada cambio y recomendaciones adicionales.`,
         ].join("\n").slice(0, 4000),
-        accepted_mime_types: [
-          "application/pdf",
-          "text/plain",
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        ],
-        max_files: 5,
       },
     ],
   };

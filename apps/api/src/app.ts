@@ -1,12 +1,15 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import { ConfigError, env } from "./env";
+import { ConfigError } from "./env";
 import { ApiError } from "./lib/errors";
+import { configurationReport } from "./configuration";
 import { authRoutes } from "./routes/auth";
 import { cronRoutes } from "./routes/cron";
 import { projectRoutes } from "./routes/projects";
+import { professionalRoutes } from "./routes/professional";
 import { webhookRoutes } from "./routes/webhooks";
+import { checkoutAppReturnUrl } from "./whop/redirects";
 
 export const app = new Hono();
 
@@ -22,19 +25,20 @@ app.get("/", (c) =>
 app.get("/favicon.ico", (c) => c.body(null, 204));
 
 app.get("/health", (c) =>
-  c.json({ ok: true, service: "bilingualcheck-api", terac_mode: process.env.TERAC_MODE ?? "replay", time: new Date().toISOString() }),
+  c.json({ ok: true, service: "bilingualcheck-api", terac_mode: process.env.TERAC_MODE ?? "replay", configuration: configurationReport(), time: new Date().toISOString() }),
 );
 
 app.route("/v1", authRoutes);
 app.route("/v1", projectRoutes);
 app.route("/", webhookRoutes);
+app.route("/", professionalRoutes);
 app.route("/", cronRoutes);
 
 // Whop redirige aquí tras el checkout (necesita https); devolvemos al cliente a la app.
 // La app solo muestra "Confirmando pago…": la verdad la decide el webhook.
 app.get("/checkout/return", (c) => {
-  const params = new URLSearchParams(c.req.query());
-  return c.redirect(`${env().APP_SCHEME}://checkout/return?${params}`);
+  c.header("Cache-Control", "no-store");
+  return c.redirect(checkoutAppReturnUrl(new URL(c.req.url).searchParams));
 });
 
 app.notFound((c) => c.json({ error: { code: "NOT_FOUND", message: "Ruta no encontrada" } }, 404));

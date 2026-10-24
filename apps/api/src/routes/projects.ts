@@ -12,6 +12,9 @@ import { body } from "../lib/validate";
 import { addMessage, getOwnedProject, requireStatus, transition } from "../services/projects";
 import { terac } from "../terac/client";
 import { createProjectCheckout } from "../whop/client";
+import { checkoutReturnTo, parseCheckoutRequestBody } from "../whop/redirects";
+import { reviewPendingSubmission } from "../services/submissions";
+import { pollQuotes } from "./cron";
 
 export const projectRoutes = new Hono<AuthVars>();
 projectRoutes.use("*", requireSession);
@@ -46,6 +49,7 @@ projectRoutes.post("/projects", async (c) => {
 
 projectRoutes.get("/projects/:id", async (c) => {
   const project = await getOwnedProject(c.req.param("id"), c.get("userId"));
+  if (project.status === "quoting") runInBackground("poll_project_quote", () => pollQuotes(project.id));
   const [quote, payment, opportunity] = await Promise.all([
     db().query.quotes.findFirst({ where: eq(schema.quotes.project_id, project.id), orderBy: desc(schema.quotes.created_at) }),
     db().query.payments.findFirst({ where: eq(schema.payments.project_id, project.id), orderBy: desc(schema.payments.created_at) }),
@@ -141,6 +145,7 @@ projectRoutes.get("/projects/:id/assets/:assetId/url", async (c) => {
 // ── Cotización y pago ─────────────────────────────────────────────
 
 projectRoutes.post("/projects/:id/quote/accept", async (c) => {
+  const { platform } = parseCheckoutRequestBody(await c.req.text());
   const project = await getOwnedProject(c.req.param("id"), c.get("userId"));
   requireStatus(project.status, ["quoted"], "aceptar la cotización");
   const quote = await db().query.quotes.findFirst({
@@ -154,6 +159,7 @@ projectRoutes.post("/projects/:id/quote/accept", async (c) => {
     quoteId: quote.id,
     totalUsd: quote.total_usd,
     title: `BilingualCheck · ${project.brief?.business.name ?? "Proyecto"}`,
+    returnTo: checkoutReturnTo(platform),
   });
   await db().insert(schema.payments).values({
     project_id: project.id,
@@ -193,30 +199,57 @@ projectRoutes.post("/projects/:id/submissions/:sid/decision", async (c) => {
   const project = await getOwnedProject(c.req.param("id"), c.get("userId"));
   requireStatus(project.status, ["in_review"], "decidir sobre la entrega");
   const input = await body(c, DecisionBody);
-  const submission = await db().query.submissions.findFirst({ where: eq(schema.submissions.id, c.req.param("sid")) });
+  const opportunity = await db().query.teracOpportunities.findFirst({ where: eq(schema.teracOpportunities.project_id, project.id) });
+  const submission = opportunity ? await db().query.submissions.findFirst({ where: and(
+    eq(schema.submissions.id, c.req.param("sid")), eq(schema.submissions.opportunity_id, opportunity.id),
+  ) }) : undefined;
   if (!submission) throw new ApiError("NOT_FOUND", "Entrega no encontrada");
-
-  if (input.decision === "approve") {
-    await terac.approveSubmission(submission.terac_submission_id);
-    await transition(project.id, "in_review", "delivered");
-  } else {
-    // MVP (doc 04 · Correcciones): si no cumple el brief se rechaza en Terac y se
-    // prepara una nueva oportunidad con el feedback [pendiente fase 5].
-    if (submission.ai_review && !submission.ai_review.meets_brief) {
-      await terac.rejectSubmission(submission.terac_submission_id, input.feedback ?? "No cumple el brief", "failed_instructions");
-    }
-    await transition(project.id, "in_review", "revision");
+  if (submission.client_decision) throw new ApiError("INVALID_STATE", "Ya hay una decisión sobre esta entrega");
+  if (!submission.ai_review || submission.reviewed_version !== submission.content_version || submission.content_version === 0) {
+    throw new ApiError("INVALID_STATE", "La revisión de la entrega todavía no ha terminado");
   }
-  await db()
-    .update(schema.submissions)
-    .set({
+  if (input.decision === "request_changes" && !input.feedback?.trim()) {
+    throw new ApiError("VALIDATION_ERROR", "Describe los cambios que necesita la entrega");
+  }
+  await db().transaction(async (tx) => {
+    // Serializa decisiones y nuevas versiones. El proveedor conserva la verdad del pago.
+    const [locked] = await tx.select().from(schema.submissions)
+      .where(eq(schema.submissions.id, submission.id)).for("update");
+    if (!locked || locked.client_decision || locked.content_version !== submission.content_version) {
+      throw new ApiError("INVALID_STATE", "La entrega cambió. Recarga antes de decidir");
+    }
+    if (input.decision === "approve") {
+      const current = await terac.getSubmission(submission.terac_submission_id);
+      if (current.status !== "approved") {
+        if (current.status !== "awaiting_review") throw new ApiError("INVALID_STATE", "Terac todavía no permite aprobar esta entrega");
+        await terac.approveSubmission(submission.terac_submission_id);
+      }
+    }
+    const [changed] = await tx.update(schema.projects)
+      .set({ status: input.decision === "approve" ? "delivered" : "revision", updated_at: new Date() })
+      .where(and(eq(schema.projects.id, project.id), eq(schema.projects.status, "in_review"))).returning();
+    if (!changed) throw new ApiError("INVALID_STATE", "El proyecto cambió mientras decidías");
+    await tx.update(schema.submissions).set({
       client_decision: input.decision === "approve" ? "approved" : "changes_requested",
       client_feedback: input.feedback ?? null,
       updated_at: new Date(),
-    })
-    .where(eq(schema.submissions.id, submission.id));
+    }).where(eq(schema.submissions.id, submission.id));
+    // Pedir cambios no aprueba ni rechaza en Terac: el mismo profesional usa el portal.
+    // Un trabajo adicional de pago requiere otra cotización y aprobación explícita.
+  });
   runInBackground("client_decision", () =>
     runAgentTurn(project.id, { type: "client_decision", decision: input.decision, feedback: input.feedback }),
   );
+  return c.json({ ok: true }, 202);
+});
+
+projectRoutes.post("/projects/:id/submissions/:sid/review", async (c) => {
+  const project = await getOwnedProject(c.req.param("id"), c.get("userId"));
+  const opportunity = await db().query.teracOpportunities.findFirst({ where: eq(schema.teracOpportunities.project_id, project.id) });
+  const submission = opportunity ? await db().query.submissions.findFirst({ where: and(
+    eq(schema.submissions.id, c.req.param("sid")), eq(schema.submissions.opportunity_id, opportunity.id),
+  ) }) : undefined;
+  if (!submission) throw new ApiError("NOT_FOUND", "Entrega no encontrada");
+  runInBackground("retry_submission_review", () => reviewPendingSubmission(submission.id));
   return c.json({ ok: true }, 202);
 });

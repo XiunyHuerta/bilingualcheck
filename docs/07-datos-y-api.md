@@ -120,7 +120,7 @@ Todas las rutas (salvo auth y webhooks) requieren `Authorization: Bearer <sessio
 | `POST` | `/v1/auth/whop` | `{ code, code_verifier, redirect_uri }` → `{ session_jwt, user }` |
 | `GET` | `/v1/me` | Usuario actual |
 | `PATCH` | `/v1/me` | `ui_language`, `business_name` |
-| `POST` | `/v1/auth/logout` | Revoca el refresh token de Whop |
+| `POST` | `/v1/auth/logout` | Cierra la sesión local; el MVP no conserva refresh tokens de Whop |
 
 ### Proyectos y chat
 
@@ -154,6 +154,11 @@ Todas las rutas (salvo auth y webhooks) requieren `Authorization: Bearer <sessio
 |--------|------|-------------|
 | `GET` | `/v1/projects/:id/submissions` | Entregas con revisión de la IA |
 | `POST` | `/v1/projects/:id/submissions/:sid/decision` | `{ decision: "approve" \| "request_changes", feedback? }` |
+| `POST` | `/v1/projects/:id/submissions/:sid/review` | Reintenta revisión pendiente; exige propiedad y contenido recibido |
+
+Entregas: `delivery_text`, `delivery_asset_id`, `content_version`, `reviewed_version`, `review_started_at` y `review_error` permiten conservar versiones y reintentar sin duplicar tarjetas. Webhooks incorporan `processing_at` y `attempts` para recuperación de eventos no procesados. Ver migración `0001` y [doc 10](10-entregas-y-validacion.md).
+
+El portal `/professional/delivery` (GET/POST) usa un token con audiencia exclusiva, sin sesión del cliente; atribuye `submissionId`/`teracSubmissionId` a su oportunidad consultando Terac. Recibe texto y sirve brief/materiales. No es un endpoint público anónimo de importación.
 
 ### Webhooks y tareas
 

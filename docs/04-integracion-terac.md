@@ -16,6 +16,13 @@ Terac es un marketplace de trabajo experto pensado para que agentes de IA contra
 
 Cliente sugerido en `apps/api/src/terac/client.ts`: `fetch` + zod para validar respuestas + reintento respetando `Retry-After`.
 
+### Puesta en marcha de Terac
+
+1. Crear la API key en el panel de Terac (organización → API keys) y ponerla en `apps/api/.env` como `TERAC_API_KEY`. Las claves son por organización y no hay documentación pública de claves sandbox: no asumir que una clave es de pruebas.
+2. `pnpm terac:setup` llama a `GET /organizations/current/context` (comprueba la clave y muestra organización y saldo), busca el proyecto «BilingualCheck» y, si no existe, lo crea con `POST /projects` (cada llamada crea uno nuevo aunque el nombre exista) y guarda `TERAC_PROJECT_ID` en `.env`. `pnpm terac:setup --check` solo comprueba.
+3. Filtros (confirmados contra la API el 2026-10-24): `multi_select--country` (`$in` con códigos ISO alfa-2) y `multi_select--language` (idioma principal, 184 opciones). Los 20 idiomas más hablados llevan región en el ID (`en-US`, `es-ES`, `pt-BR`, `ko-KR`, `zh-CN`…) y el resto usa el código simple (`ht`, `ar`, `fil`…; tagalo es `fil`, no `tl`). La tabla vive en `src/terac/filters.ts`; `pnpm terac:filters <slug>` vuelve a listar las opciones. La documentación no dice si varios filtros se combinan con AND u OR: validarlo en el borrador antes de lanzar.
+4. Webhooks con `pnpm terac:webhooks` (ver más abajo) y cotización real para `TERAC_DEMO_FEASIBILITY_REQUEST_ID`.
+
 ## Mapeo de nuestro flujo a Terac
 
 | Paso BilingualCheck | Llamada Terac | Notas |
@@ -48,15 +55,15 @@ Campos obligatorios de `POST /opportunities`: `title`, `project_id`, `num_partic
   "feasibility_request_id": "<id de la cotización>",
   "filters": [ "<idioma, ubicación, experiencia en marketing: ver GET /filters>" ],
   "screening_questions": [
-    { "question": "¿Has creado campañas para el público anglohablante de Miami? Describe un ejemplo." }
+    { "text": "¿Has creado campañas para el público anglohablante de Miami? Describe un ejemplo.", "pick": "text" }
   ],
   "tasks": [
     {
       "sequence": 1,
-      "task_type": "file_upload",
+      "task_type": "interview",
+      "task_url": "https://<api>/professional/delivery?token=<token-firmado-por-servidor>",
       "review_type": "manual_review",
-      "instructions": "Descarga los materiales en <URL firmada>. Entrega: 1) textos adaptados de los 3 anuncios, 2) notas culturales que expliquen cada cambio, 3) recomendaciones para la web.",
-      "accepted_mime_types": ["application/pdf", "text/plain", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]
+      "instructions": "Abre la página de entrega para ver el brief y los materiales y enviar: 1) textos adaptados de los 3 anuncios, 2) notas culturales, 3) recomendaciones para la web. Después vuelve a Terac y termina la tarea."
     }
   ]
 }
@@ -87,8 +94,8 @@ Notas:
 Alta (una vez por entorno, con script `pnpm terac:webhooks`):
 
 1. `POST /hooks/subscriptions` con `target_url = https://<api>/webhooks/terac` y `event_types = ["submission.status.change", "submission.approved"]`.
-2. Terac envía `webhook.ping`; confirmar con `POST /hooks/subscriptions/{id}` y cuerpo `{}`.
-3. Leer el secreto con `GET /hooks/subscriptions/{id}/secret` → `TERAC_WEBHOOK_SECRET`.
+2. Leer el secreto con `GET /hooks/subscriptions/{id}/secret` → `TERAC_WEBHOOK_SECRET`. `pnpm terac:webhooks` lo guarda en el `.env` ignorado sin imprimirlo; reutiliza la suscripción de la misma URL si ya existe.
+3. Poner ese secreto en el receptor de Vercel y desplegarlo. **Después**, `pnpm terac:webhooks --confirm <id>` hace `POST /hooks/subscriptions/{id}`: Terac envía el ping firmado y exige 2xx. Confirmar antes de configurar el secreto deja la suscripción sin activar.
 
 Verificación en `/webhooks/terac`:
 
@@ -108,16 +115,17 @@ No hay webhook documentado para cotizaciones, por eso usamos **cron** para `GET 
 
 ## Correcciones (revisiones)
 
-Terac no documenta públicamente un ciclo de "pedir cambios" sobre la misma entrega **[verificar]**. Propuesta para el MVP:
+Terac no documenta públicamente un ciclo de "pedir cambios" sobre la misma entrega. El MVP usa el portal propio para recibir nuevas versiones:
 
-1. Si el cliente pide cambios y la entrega **no cumple** el brief → `reject` (no se factura) y nueva oportunidad con el feedback.
-2. Si la entrega **cumple** pero el cliente quiere ajustes menores → `approve` y crear una oportunidad corta de "ronda de ajustes" (requiere nuevo pago o un margen ya incluido en el precio).
+1. Pedir cambios guarda el feedback y cambia a `revision`; no llama a `approve` ni `reject`, ni crea otra oportunidad de pago.
+2. El mismo profesional vuelve a abrir su enlace, lee el feedback y envía una nueva versión. La IA vuelve a revisarla, y el cliente decide al verla.
+3. Solo aprobar llama a Terac. Si el alcance exige otro trabajo de pago, se necesita un nuevo brief/cotización y consentimiento. La coordinación y los estados de Terac deben validarse en la prueba real.
 
-Incluir **una ronda de ajustes** en el precio inicial simplifica la experiencia.
+El MVP recibe entregas de texto, conservadas como `.txt` en Storage privado. PDFs, DOCX e imágenes como entregable del profesional siguen pendientes. Ver [doc 10](10-entregas-y-validacion.md).
 
 ## Modo demo
 
 El precio lo fija una persona de Terac y puede tardar horas. Para la demo:
 
 - Crear **antes** una cotización real ya respondida y reutilizar su `feasibility_request_id`.
-- Variable `TERAC_MODE=live|replay`: en `replay`, el cliente de Terac devuelve respuestas grabadas de una ejecución real (mismo formato), para que la demo no dependa de tiempos externos.
+- Variable `TERAC_MODE=live|replay`: actualmente `replay` usa fixtures sintéticas con la forma de la API, etiquetadas como simuladas. No son todavía una grabación de una ejecución real. El precio no representa una cotización confirmada de Terac.
