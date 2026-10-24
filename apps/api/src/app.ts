@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import { env } from "./env";
+import { ConfigError, env } from "./env";
 import { ApiError } from "./lib/errors";
 import { authRoutes } from "./routes/auth";
 import { cronRoutes } from "./routes/cron";
@@ -33,6 +33,9 @@ app.notFound((c) => c.json({ error: { code: "NOT_FOUND", message: "Ruta no encon
 
 app.onError((err, c) => {
   if (err instanceof ApiError) return c.json(err.toJSON(), err.status);
+  if (err instanceof ConfigError) {
+    return c.json({ error: { code: "NOT_CONFIGURED", message: err.message, details: { missing: err.missing } } }, 503);
+  }
   console.error(err);
   return c.json({ error: { code: "INTERNAL", message: "Error interno" } }, 500);
 });
