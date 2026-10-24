@@ -45,14 +45,20 @@ const EnvSchema = z.object({
 
 export type Env = z.infer<typeof EnvSchema>;
 
+/** Falta configuración del servidor: la API responde 503 en vez de un 500 genérico. */
+export class ConfigError extends Error {
+  constructor(readonly missing: string[]) {
+    super(`Servidor sin configurar: faltan ${missing.join(", ")}`);
+  }
+}
+
 let cached: Env | undefined;
 
 export function env(): Env {
   if (!cached) {
     const parsed = EnvSchema.safeParse(process.env);
     if (!parsed.success) {
-      const issues = parsed.error.issues.map((i) => `  - ${i.path.join(".")}: ${i.message}`).join("\n");
-      throw new Error(`Variables de entorno inválidas:\n${issues}`);
+      throw new ConfigError([...new Set(parsed.error.issues.map((i) => i.path.join(".")))]);
     }
     cached = parsed.data;
   }
@@ -63,7 +69,7 @@ export function env(): Env {
 export function required<K extends keyof Env>(key: K): NonNullable<Env[K]> {
   const value = env()[key];
   if (value === undefined || value === null || value === "") {
-    throw new Error(`Falta la variable de entorno ${String(key)}`);
+    throw new ConfigError([String(key)]);
   }
   return value as NonNullable<Env[K]>;
 }

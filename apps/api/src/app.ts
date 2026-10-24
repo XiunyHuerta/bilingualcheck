@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import { env } from "./env";
+import { ConfigError, env } from "./env";
 import { ApiError } from "./lib/errors";
 import { authRoutes } from "./routes/auth";
 import { cronRoutes } from "./routes/cron";
@@ -12,6 +12,12 @@ export const app = new Hono();
 
 app.use("*", logger());
 app.use("/v1/*", cors());
+
+// Quien abre la URL en el navegador ve qué es esto en vez de un 404 (la interfaz es la app Expo).
+app.get("/", (c) =>
+  c.json({ service: "bilingualcheck-api", message: "API de BilingualCheck. La interfaz es la app Expo.", health: "/health" }),
+);
+app.get("/favicon.ico", (c) => c.body(null, 204));
 
 app.get("/health", (c) =>
   c.json({ ok: true, service: "bilingualcheck-api", terac_mode: process.env.TERAC_MODE ?? "replay", time: new Date().toISOString() }),
@@ -33,6 +39,9 @@ app.notFound((c) => c.json({ error: { code: "NOT_FOUND", message: "Ruta no encon
 
 app.onError((err, c) => {
   if (err instanceof ApiError) return c.json(err.toJSON(), err.status);
+  if (err instanceof ConfigError) {
+    return c.json({ error: { code: "NOT_CONFIGURED", message: err.message, details: { missing: err.missing } } }, 503);
+  }
   console.error(err);
   return c.json({ error: { code: "INTERNAL", message: "Error interno" } }, 500);
 });

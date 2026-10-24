@@ -4,10 +4,39 @@
 
 ```
 apps/api        Hono (Vercel) · Drizzle + Supabase · agente Claude · Terac · Whop
-apps/mobile     Expo SDK 58 · Expo Router (src/app) · React Query · Realtime
+apps/mobile     Expo SDK 58 · Expo Router (src/app) · React Query · Realtime · iOS, Android y web
 packages/shared Estados y transiciones, esquemas zod, idiomas BCP-47, precio
 vendor/terac    openapi.json de Terac v2 (beta) descargado el día 0
+docs/           Planificación (01–08) y guía de estilo UI (styleUIguide.md)
 ```
+
+## Estado del proyecto
+
+> **Fase actual: 5 de 6 — Contratación y entregas (en curso).** Actualizado el 2026-10-24.
+> Las fases 1–4 tienen el código completo y typecheck/tests en verde; todavía no se han validado de punta a punta con claves reales. La fase 5 tiene la app lista y el backend a medias. La fase 6 (pulido) ya empezó por el diseño.
+
+| Fase | Qué cubre | Estado | Qué falta |
+|------|-----------|--------|-----------|
+| 1 · Esqueleto conectado | Monorepo, Hono en Vercel, Drizzle + Supabase, Expo Router, login con Whop, turno básico del agente | ✅ Código listo · 🟡 sin validar con servicios reales | Claves reales, `pnpm db:migrate`, login en un *development build* |
+| 2 · Brief y materiales | Herramientas `ask_client` / `save_brief`, subida con URL firmada, tarjetas de respuestas rápidas y brief | ✅ Código listo · 🟡 sin validar | Pruebas de conversación en 3 pares de idiomas (es→en, pt→en, ko→es) |
+| 3 · Cotización con Terac | Cliente REST, `request_quote`, cron `/cron/poll-quotes`, modo `replay`, tarjeta de cotización | ✅ Código listo · 🟡 sin validar | Mapa de filtros de Terac (`terac/filters.ts` sigue vacío), cotización real |
+| 4 · Pago con Whop | `quote/accept` → checkout, webhook `payment.succeeded`, pantalla `checkout/return` | ✅ Código listo · 🟡 sin validar | Pago de prueba en el sandbox de Whop |
+| **5 · Contratación y entregas** | Oportunidad en Terac, webhooks, revisión con IA, entrega y aprobación | 🟡 **En curso** | Ver detalle abajo |
+| 6 · Pulido y demo | i18n, estados vacíos/errores, datos de demo, video, diapositivas | 🟡 Empezada | Datos de demo, diapositivas, ensayos |
+
+**Fase 5, al detalle**
+
+- ✅ `create_opportunity` + `launch_opportunity`, webhook `/webhooks/terac` con HMAC, sincronización de entregas, `POST …/submissions/:sid/decision` (aprobar / pedir cambios).
+- ✅ App: tarjeta de **entrega**, pantalla de **revisión** (profesional, evaluación de la IA, criterios, aprobar / pedir cambios) y **línea de tiempo** del proyecto.
+- ⬜ Backend: `reviewSubmission` (Opus) existe en `agent/review.ts` pero **ningún flujo lo invoca todavía**, y el agente aún no publica la tarjeta `delivery`. Mientras tanto la app arma la tarjeta con los datos de la entrega y muestra «La IA todavía está revisando…».
+- ⬜ Backend: ronda de correcciones (nueva oportunidad con el feedback del cliente) y decidir cómo llegan los archivos (ver *Terac entregas* abajo).
+- ⬜ Notificaciones push (`expo-notifications`, requiere *development build*).
+
+**Fase 6, lo hecho**: sistema de diseño de la marca aplicado a toda la app (ver más abajo), textos en es/en/pt, estados vacíos, de error y «el agente está escribiendo…», etiqueta «Demo conceptual» cuando Terac corre en `replay`, y un video demo en `video/`.
+
+### Diseño de la app
+
+La interfaz sigue [`docs/styleUIguide.md`](docs/styleUIguide.md): paleta cobalt/sky/gold/cream/coral/sage/ink, Manrope (títulos) + DM Sans (texto), radios 30/22/14, sombras suaves y movimiento de entrada/pop/marcador. Los tokens viven en `apps/mobile/src/theme/tokens.ts` y los componentes en `apps/mobile/src/components/` (`ui`, `cards`, `chat`, `stepper`, `motion`). Los logos y la ilustración salen de `apps/mobile/assets/brand/` (copia de `public/brand/`). Para verla en el navegador: `pnpm dev:mobile` y pulsar `w`.
 
 ## Puesta en marcha
 
@@ -50,4 +79,6 @@ Sin claves, el backend arranca y `/health` responde; `TERAC_MODE=replay` simula 
 - Claves reales y `pnpm db:migrate` contra Supabase; probar el login con Whop en un **development build** (`eas build --profile development`).
 - **Vercel Cron cada minuto requiere plan Pro**; en Hobby, usar un cron externo contra `/cron/poll-quotes` con `CRON_SECRET`. En local, `pnpm dev:api` ya sondea cada 30 s.
 - Mapa de filtros de Terac (`pnpm terac:filters` → `apps/api/src/terac/filters.ts`).
-- Fase 5: revisión de entregas con Opus (`apps/api/src/agent/review.ts` ya existe), tarjeta y pantalla de entrega, correcciones.
+- Fase 5 (backend): invocar `reviewSubmission` (`apps/api/src/agent/review.ts`) al recibir una entrega, publicar la tarjeta `delivery` desde el agente y la ronda de correcciones. La tarjeta, la pantalla de revisión y la línea de tiempo ya están en la app.
+- Fase 6: datos de demo, diapositivas, ensayos; notificaciones push (requieren *development build*).
+- Probar la app con una cuenta real en dispositivo: la UI nueva se revisó en el navegador (web) contra una API simulada, no en iOS/Android.

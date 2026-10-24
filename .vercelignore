@@ -1,0 +1,5 @@
+# Solo se despliega la API (apps/api + packages/shared): no subir material pesado.
+video/
+docs/
+public/
+vendor/

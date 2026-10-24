@@ -1,24 +1,58 @@
 {
   "tagline": "Your business deserves to be understood.",
+  "common": {
+    "back": "Back",
+    "retry": "Try again",
+    "loadError": "We couldn't load this. Check your connection and try again."
+  },
+  "honesty": {
+    "concept": "Concept demo",
+    "illustrative": "Illustrative example"
+  },
   "welcome": {
-    "title": "Reach the community that speaks another language",
+    "eyebrow": "AI agent + real professionals",
+    "title": "Reach the community that speaks **another language**",
     "body": "Tell us your goal in your own language. Our agent hires real professionals who know your audience's culture and coordinates the work until delivery.",
+    "pairs": "es → en · any language pair",
+    "uiLanguage": "App language",
     "cta": "Get started"
   },
   "signIn": {
-    "title": "Sign in",
+    "title": "**Sign in**",
+    "body": "We use your Whop account to identify you and to get paid. Work with professionals only starts once you approve and pay.",
     "button": "Continue with Whop",
-    "error": "We couldn't sign you in. Please try again."
+    "error": "We couldn't sign you in. Please try again.",
+    "notConfigured": "Whop sign-in isn't configured in this build yet."
+  },
+  "steps": {
+    "chat": "Conversation",
+    "brief": "Brief",
+    "quote": "Quote",
+    "payment": "Payment",
+    "work": "Work",
+    "delivery": "Delivery"
+  },
+  "stepsHint": {
+    "chat": "Tell the agent your goal and who you want to reach.",
+    "brief": "You review and confirm the project summary.",
+    "quote": "Real professionals quote the work.",
+    "payment": "You pay with Whop; nothing starts before that.",
+    "work": "A professional with cultural judgment does the work.",
+    "delivery": "The AI explains the changes and you approve."
   },
   "projects": {
     "title": "Projects",
-    "empty": "You don't have any projects yet. Create your first one and tell the agent what you need.",
-    "new": "New project"
+    "empty": "You don't have any projects yet",
+    "emptyBody": "Create your first one and tell the agent what you need, in your own language.",
+    "new": "New project",
+    "untitled": "Untitled project"
   },
   "newProject": {
     "title": "New project",
-    "sourceLanguage": "Which language do you want to chat in?",
+    "heading": "Which language do you want to **chat** in?",
+    "sourceLanguage": "The agent will answer in this language. You can pick a different language pair for every project.",
     "search": "Search language",
+    "empty": "No language matches your search.",
     "create": "Create and open chat"
   },
   "chat": {
@@ -27,14 +61,18 @@
     "attach": "Attach",
     "typing": "The agent is typing…",
     "agentError": "The agent ran into a problem. Please try again in a moment.",
-    "uploading": "Uploading file…"
+    "uploading": "Uploading file…",
+    "empty": "The agent is preparing its greeting…",
+    "timeline": "View progress"
   },
   "card": {
     "briefTitle": "Project brief",
+    "ready": "Ready for review",
     "goal": "Goal",
     "market": "Market",
     "audience": "Audience",
     "deliverables": "Deliverables",
+    "culturalNotes": "Cultural notes",
     "confirm": "Confirm",
     "correct": "Change something",
     "correctHint": "Tell us what you want to change in the brief.",
@@ -42,7 +80,39 @@
     "eta": "Estimated time: {{days}} days",
     "includes": "Includes",
     "pay": "Pay with Whop",
+    "moneyNote": "Work with professionals only starts once you approve and pay.",
+    "deliveryTitle": "Delivery",
+    "deliveryHeadline": "Your delivery is ready to review",
+    "reviewDelivery": "Review delivery",
+    "approvalNote": "You decide: when you approve, the professional gets paid.",
     "recommendation": "Recommendation"
+  },
+  "review": {
+    "title": "Delivery review",
+    "professional": "Professional",
+    "professionalNote": "A real person with experience in your market.",
+    "illustrativeNote": "Example profile: this demo uses recorded Terac responses.",
+    "aiTitle": "AI assessment",
+    "meets": "Meets the brief",
+    "needsLook": "Worth a closer look",
+    "pending": "The AI is still reviewing this delivery.",
+    "culturalTitle": "What changed culturally and why",
+    "criteriaTitle": "Brief criteria",
+    "criteriaCount": "{{met}} of {{total}} criteria met",
+    "issuesTitle": "Points to check",
+    "decisionTitle": "Your decision",
+    "approve": "Approve delivery",
+    "approved": "Delivery approved",
+    "requestChanges": "Request changes",
+    "changesPlaceholder": "Tell the agent what should change…",
+    "sendChanges": "Send changes",
+    "cancel": "Cancel",
+    "changesSent": "Changes requested",
+    "changesSentBody": "The agent will pass them to the professional and you'll receive the delivery again.",
+    "approvedBody": "Thank you. The professional gets paid and the project is delivered.",
+    "approvalNote": "You decide: when you approve, the professional gets paid.",
+    "notFound": "We couldn't find this delivery.",
+    "error": "We couldn't send your decision. Please try again."
   },
   "status": {
     "intake": "Chatting",
@@ -59,13 +129,20 @@
     "failed": "No professionals available",
     "refunded": "Refunded"
   },
+  "timeline": {
+    "title": "Progress",
+    "now": "Right now"
+  },
   "profile": {
     "title": "Profile",
     "uiLanguage": "App language",
-    "signOut": "Sign out"
+    "uiLanguageHint": "The agent answers in your project's language, not this one.",
+    "signOut": "Sign out",
+    "noName": "Your business"
   },
   "checkout": {
     "confirming": "Confirming your payment…",
+    "confirmingBody": "We're waiting for Whop to confirm. This screen updates by itself.",
     "back": "Back to project"
   }
 }

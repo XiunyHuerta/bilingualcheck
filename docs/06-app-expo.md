@@ -17,7 +17,7 @@
 | Idiomas | `expo-localization` + `i18next` / `react-i18next` |
 | Formularios | `react-hook-form` + `zod` (esquemas compartidos de `packages/shared`) |
 | Estilos | `StyleSheet` con tokens de marca (o NativeWind si el equipo lo prefiere) |
-| Fuentes | `@expo-google-fonts/manrope`, `@expo-google-fonts/inter` |
+| Fuentes | `@expo-google-fonts/manrope`, `@expo-google-fonts/dm-sans` |
 | Builds | EAS Build (development build para probar deep links y OAuth) |
 
 > Expo Go sirve para empezar, pero **OAuth y deep links se prueban en un development build** (`eas build --profile development`).
@@ -79,24 +79,28 @@ Así evitamos streaming por HTTP en React Native. Mientras el agente piensa, se 
 
 ## Sistema de diseño (desde el brand kit)
 
+La referencia visual completa es [`styleUIguide.md`](styleUIguide.md). Los tokens implementados están en `apps/mobile/src/theme/tokens.ts`:
+
 ```ts
-// apps/mobile/src/theme/tokens.ts
 export const colors = {
-  blueDeep:   "#315A9E",  // primario: botones, encabezados
-  blueSoft:   "#A6CBEA",  // fondos de tarjetas del agente
-  yellow:     "#F5C949",  // acentos creativos, destacados
-  cream:      "#F5F0D7",  // fondo general
-  coral:      "#D98178",  // elementos humanos: profesionales, entregas
-  green:      "#548569",  // éxito, conexión, estados completados
-  ink:        "#1E2A3A",  // texto principal (a validar contraste)
+  cobalt: "#315A9E",  // primario: botones, paso activo, mensajes del dueño
+  sky:    "#A6CBEA",  // agente e IA
+  gold:   "#F5C949",  // acentos y marcador
+  cream:  "#F5F0D7",  // fondo general
+  coral:  "#D98178",  // lo humano: profesionales, revisión pedida
+  sage:   "#548569",  // éxito: completado, aprobado
+  ink:    "#202835",  // texto principal (unificado con el brand kit; antes #1E2A3A)
+  // + superficies (paper, sidebar), tintes suaves (skySoft…) y muted/border como ink al 62 % / 12 %
 };
 
 export const fonts = {
-  heading: "Manrope_700Bold",
-  body: "Inter_400Regular",
-  bodyMedium: "Inter_500Medium",
+  heading: "Manrope_800ExtraBold",
+  body: "DMSans_400Regular",
+  // + headingBold, bodyMedium, bodySemi, bodyBold e italic (glosas)
 };
 ```
+
+Componentes: `ui.tsx` (Screen, Button, Heading, Card, Pill, Chip, Field, Logo, Avatar, HonestyTag, EmptyState), `stepper.tsx` (stepper de 6 pasos y línea de tiempo), `chat.tsx` (burbujas y compositor), `cards.tsx` (brief, cotización, entrega) y `motion.tsx` (Reveal, Pop, Marker, TypingDots).
 
 Pautas:
 - Símbolo: piezas modulares o burbujas de diálogo que encajan. **Sin banderas ni globos terráqueos genéricos**.

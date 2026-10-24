@@ -1,15 +1,16 @@
 import * as AuthSession from "expo-auth-session";
 import * as Crypto from "expo-crypto";
+import { router } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Body, Button, Heading } from "@/components/ui";
+import { Reveal } from "@/components/motion";
+import { Body, Button, Card, Heading, Illustration, Logo, Screen } from "@/components/ui";
 import { post, type User } from "@/lib/api";
 import { config } from "@/lib/config";
 import { useSession } from "@/lib/session";
-import { colors, space } from "@/theme/tokens";
+import { space } from "@/theme/tokens";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -57,25 +58,46 @@ export default function SignIn() {
   }, [response, request, redirectUri, signIn]);
 
   return (
-    <SafeAreaView style={s.screen}>
-      <Heading>{t("signIn.title")}</Heading>
-      <View style={{ height: space.md }} />
-      <Body muted>{t("tagline")}</Body>
-      <View style={{ flex: 1 }} />
-      {error && <Body>{t("signIn.error")}</Body>}
-      <Button
-        label={t("signIn.button")}
-        disabled={!request || !config.whopClientId}
-        loading={loading}
-        onPress={() => {
-          setError(false);
-          setLoading(true);
-          void promptAsync();
-        }}
-        style={{ marginTop: space.md }}
-      />
-    </SafeAreaView>
+    <Screen blobs>
+      <View style={s.content}>
+        <Reveal>
+          <Logo variant="horizontal" height={30} />
+        </Reveal>
+
+        <Reveal delay={100} style={{ marginTop: space.xxl, gap: space.md }}>
+          <Illustration height={150} />
+          <Heading>{t("signIn.title")}</Heading>
+          <Body muted>{t("signIn.body")}</Body>
+        </Reveal>
+
+        <View style={{ flex: 1 }} />
+
+        <Reveal delay={200} style={{ gap: space.md }}>
+          {error && (
+            <Card tone="coral" style={{ padding: space.lg }}>
+              <Body small>{t("signIn.error")}</Body>
+            </Card>
+          )}
+          {!config.whopClientId && (
+            <Card tone="gold" style={{ padding: space.lg }}>
+              <Body small>{t("signIn.notConfigured")}</Body>
+            </Card>
+          )}
+          <Button
+            label={t("signIn.button")}
+            disabled={!request || !config.whopClientId}
+            loading={loading}
+            onPress={() => {
+              setError(false);
+              setLoading(true);
+              void promptAsync();
+            }}
+          />
+          <Button label={t("common.back")} variant="ghost" onPress={() => router.back()} />
+        </Reveal>
+      </View>
+    </Screen>
   );
 }
 
-const s = StyleSheet.create({ screen: { flex: 1, padding: space.xl, backgroundColor: colors.cream } });
+const s = StyleSheet.create({ content: { flex: 1, padding: space.xl } });

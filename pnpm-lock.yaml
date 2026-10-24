@@ -216,7 +216,7 @@ importers:
         specifier: ^0.31.11
         version: 0.31.11
       esbuild:
-        specifier: ^0.28.2
+        specifier: 0.28.2
         version: 0.28.2
       tsx:
         specifier: ^4.23.15
@@ -227,7 +227,7 @@ importers:
       '@bc/shared':
         specifier: workspace:*
         version: link:../../packages/shared
-      '@expo-google-fonts/inter':
+      '@expo-google-fonts/dm-sans':
         specifier: ^0.4.2
         version: 0.4.2
       '@expo-google-fonts/manrope':
@@ -1182,8 +1182,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@expo-google-fonts/inter@0.4.2':
-    resolution: {integrity: sha512-syfiImMaDmq7cFi0of+waE2M4uSCyd16zgyWxdPOY7fN2VBmSLKEzkfbZgeOjJq61kSqPBNNtXjggiQiSD6gMQ==}
+  '@expo-google-fonts/dm-sans@0.4.2':
+    resolution: {integrity: sha512-e/fLH5aCJzkEenz7axvEn8N7IJAKhUwNjIxS75h9j+Ip1M9S7d22M19gJN3A7QW4egVkBJRyQh1hQFhngQn9yA==}
 
   '@expo-google-fonts/manrope@0.4.2':
     resolution: {integrity: sha512-BZsKe8d9BJrVnIQIZcTS7/Kac0TbXnqs/+8EBSiQxrmK6GoCO6eTkmr50D1weIk/EoF20pTmAkpWICnovATr/g==}
@@ -4689,7 +4689,7 @@ snapshots:
   '@esbuild/win32-x64@0.28.2':
     optional: true
 
-  '@expo-google-fonts/inter@0.4.2': {}
+  '@expo-google-fonts/dm-sans@0.4.2': {}
 
   '@expo-google-fonts/manrope@0.4.2': {}
 

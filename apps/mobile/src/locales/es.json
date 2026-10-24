@@ -1,24 +1,58 @@
 {
   "tagline": "Tu negocio merece ser entendido.",
+  "common": {
+    "back": "Atrás",
+    "retry": "Reintentar",
+    "loadError": "No pudimos cargar esta información. Revisa tu conexión e inténtalo de nuevo."
+  },
+  "honesty": {
+    "concept": "Demo conceptual",
+    "illustrative": "Ejemplo ilustrativo"
+  },
   "welcome": {
-    "title": "Llega a la comunidad que habla otro idioma",
+    "eyebrow": "Agente de IA + profesionales reales",
+    "title": "Llega a la comunidad que habla **otro idioma**",
     "body": "Cuéntanos tu meta en tu idioma. Nuestro agente contrata profesionales reales que conocen la cultura de tu público y coordina el trabajo hasta la entrega.",
+    "pairs": "es → en · cualquier par de idiomas",
+    "uiLanguage": "Idioma de la interfaz",
     "cta": "Empezar"
   },
   "signIn": {
-    "title": "Inicia sesión",
+    "title": "Inicia **sesión**",
+    "body": "Usamos tu cuenta de Whop para identificarte y para cobrar. El trabajo con profesionales empieza solo cuando tú apruebas y pagas.",
     "button": "Continuar con Whop",
-    "error": "No pudimos iniciar sesión. Inténtalo de nuevo."
+    "error": "No pudimos iniciar sesión. Inténtalo de nuevo.",
+    "notConfigured": "Falta configurar el inicio de sesión de Whop en esta versión."
+  },
+  "steps": {
+    "chat": "Conversación",
+    "brief": "Brief",
+    "quote": "Cotización",
+    "payment": "Pago",
+    "work": "Trabajo",
+    "delivery": "Entrega"
+  },
+  "stepsHint": {
+    "chat": "Cuéntale al agente tu meta y a quién quieres llegar.",
+    "brief": "Revisas y confirmas el resumen del proyecto.",
+    "quote": "Profesionales reales cotizan el trabajo.",
+    "payment": "Pagas con Whop; hasta entonces no empieza nada.",
+    "work": "Un profesional con criterio cultural lo ejecuta.",
+    "delivery": "La IA te explica los cambios y tú apruebas."
   },
   "projects": {
     "title": "Proyectos",
-    "empty": "Todavía no tienes proyectos. Crea el primero y cuéntale al agente qué necesitas.",
-    "new": "Nuevo proyecto"
+    "empty": "Todavía no tienes proyectos",
+    "emptyBody": "Crea el primero y cuéntale al agente qué necesitas, en tu idioma.",
+    "new": "Nuevo proyecto",
+    "untitled": "Proyecto sin nombre"
   },
   "newProject": {
     "title": "Nuevo proyecto",
-    "sourceLanguage": "¿En qué idioma quieres conversar?",
+    "heading": "¿En qué idioma quieres **conversar**?",
+    "sourceLanguage": "El agente te responderá en este idioma. Puedes cambiar de par de idiomas en cada proyecto.",
     "search": "Buscar idioma",
+    "empty": "Ningún idioma coincide con tu búsqueda.",
     "create": "Crear y abrir el chat"
   },
   "chat": {
@@ -27,14 +61,18 @@
     "attach": "Adjuntar",
     "typing": "El agente está escribiendo…",
     "agentError": "El agente tuvo un problema. Vuelve a intentarlo en un momento.",
-    "uploading": "Subiendo archivo…"
+    "uploading": "Subiendo archivo…",
+    "empty": "El agente está preparando su saludo…",
+    "timeline": "Ver progreso"
   },
   "card": {
     "briefTitle": "Brief del proyecto",
+    "ready": "Listo para revisar",
     "goal": "Objetivo",
     "market": "Mercado",
     "audience": "Público",
     "deliverables": "Entregables",
+    "culturalNotes": "Notas culturales",
     "confirm": "Confirmar",
     "correct": "Corregir algo",
     "correctHint": "Escribe qué quieres cambiar del brief.",
@@ -42,7 +80,39 @@
     "eta": "Plazo estimado: {{days}} días",
     "includes": "Incluye",
     "pay": "Pagar con Whop",
+    "moneyNote": "El trabajo con profesionales empieza solo cuando tú apruebas y pagas.",
+    "deliveryTitle": "Entrega",
+    "deliveryHeadline": "Tu entrega está lista para revisar",
+    "reviewDelivery": "Revisar entrega",
+    "approvalNote": "Tú decides: al aprobar, el profesional recibe su pago.",
     "recommendation": "Recomendación"
+  },
+  "review": {
+    "title": "Revisión de la entrega",
+    "professional": "Profesional",
+    "professionalNote": "Una persona real con experiencia en tu mercado.",
+    "illustrativeNote": "Perfil de ejemplo: esta demo usa respuestas grabadas de Terac.",
+    "aiTitle": "Evaluación de la IA",
+    "meets": "Cumple el brief",
+    "needsLook": "Conviene revisar",
+    "pending": "La IA todavía está revisando esta entrega.",
+    "culturalTitle": "Qué cambió culturalmente y por qué",
+    "criteriaTitle": "Criterios del brief",
+    "criteriaCount": "{{met}} de {{total}} criterios cumplidos",
+    "issuesTitle": "Puntos a revisar",
+    "decisionTitle": "Tu decisión",
+    "approve": "Aprobar entrega",
+    "approved": "Entrega aprobada",
+    "requestChanges": "Pedir cambios",
+    "changesPlaceholder": "Cuéntale al agente qué debe cambiar…",
+    "sendChanges": "Enviar cambios",
+    "cancel": "Cancelar",
+    "changesSent": "Cambios pedidos",
+    "changesSentBody": "El agente se los pasará al profesional y volverás a recibir la entrega.",
+    "approvedBody": "Gracias. El profesional recibe su pago y el proyecto queda entregado.",
+    "approvalNote": "Tú decides: al aprobar, el profesional recibe su pago.",
+    "notFound": "No encontramos esta entrega.",
+    "error": "No pudimos enviar tu decisión. Inténtalo de nuevo."
   },
   "status": {
     "intake": "Conversando",
@@ -59,13 +129,20 @@
     "failed": "Sin profesionales disponibles",
     "refunded": "Reembolsado"
   },
+  "timeline": {
+    "title": "Progreso",
+    "now": "Ahora mismo"
+  },
   "profile": {
     "title": "Perfil",
     "uiLanguage": "Idioma de la interfaz",
-    "signOut": "Cerrar sesión"
+    "uiLanguageHint": "El agente responde en el idioma de tu proyecto, no en este.",
+    "signOut": "Cerrar sesión",
+    "noName": "Tu negocio"
   },
   "checkout": {
     "confirming": "Confirmando tu pago…",
+    "confirmingBody": "Esperamos la confirmación de Whop. Esta pantalla se actualiza sola.",
     "back": "Volver al proyecto"
   }
 }
